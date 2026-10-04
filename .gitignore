@@ -1,0 +1,23 @@
+# never commit exports or anything derived from game content
+*.gil
+*.gis
+*.gilh
+*.gia
+export/
+*.inspect.md
+gil-snapshot.json
+
+# build output
+/gil-inspect
+/gil-inspect.exe
+/dist/
+
+# go
+*.test
+*.out
+
+# editors / os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
