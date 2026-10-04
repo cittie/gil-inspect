@@ -1,5 +1,7 @@
 # gil-inspect
 
+**English** ｜ [中文](README.zh-CN.md)
+
 A **read-only** inspector for level-export files produced by the official *export save* feature
 of the Genshin Impact UGC editor (Miliastra Wonderland / 千星沙箱).
 
@@ -10,6 +12,9 @@ each node in a graph is called.
 ```
 gil-inspect -path export/MyLevel.gil -graphs
 ```
+
+> **Bilingual docs.** This README and [`README.zh-CN.md`](README.zh-CN.md) are maintained together —
+> when you change one, update the other in the same commit.
 
 ## Status
 
