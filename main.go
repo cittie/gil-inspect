@@ -48,6 +48,7 @@ func main() {
 	snap := flag.String("snapshot", "", "snapshot path (default <dir>/gil-snapshot.json)")
 	graphDump := flag.Bool("graphdump", false, "also dump the node-graph field as an indented Markdown tree")
 	graphs := flag.Bool("graphs", false, "write the node graphs as a plain-text/markdown intermediate file")
+	pins := flag.Bool("pins", false, "debug: print every pin descriptor in raw form (calibration aid)")
 	nodeTypes := flag.String("nodetypes", "node-types.txt", "id<TAB>name lookup table for node types")
 	graphField := flag.Int("graphfield", 10, "container field number that holds node graphs")
 	flag.Parse()
@@ -143,6 +144,18 @@ func main() {
 			}
 		} else {
 			fmt.Fprintf(os.Stderr, "field %d not found (or is not length-delimited)\n", *graphField)
+		}
+	}
+
+	if *pins {
+		base := strings.TrimSuffix(*path, filepath.Ext(*path))
+		outPath := fmt.Sprintf("%s.pins.md", base)
+		if payload, ok := fieldPayload(raw, *graphField); ok {
+			if err := os.WriteFile(outPath, []byte(dumpPins(payload)), 0o644); err != nil {
+				fmt.Fprintln(os.Stderr, "cannot write pin dump:", err)
+			} else {
+				fmt.Printf("pin dump  : %s\n", outPath)
+			}
 		}
 	}
 

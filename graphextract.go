@@ -349,6 +349,9 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 			b.WriteString(line + "\n")
 		}
 		b.WriteString("links:\n")
+		b.WriteString("  # EXPERIMENTAL - not verified against a known graph, do not trust yet\n")
+		b.WriteString("  # the pin blocks decoded so far do not contain the real node pairs; see\n")
+		b.WriteString("  # docs/node-graph-extraction.md 6b/6c for the ground truth this must reproduce\n")
 		if len(g.Links) == 0 {
 			b.WriteString("  (none)\n")
 		} else {
@@ -389,4 +392,81 @@ func uniqStrings(in []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// dumpPins is a debugging aid: it prints every pin descriptor of every graph in raw form, so
+// the field layout can be calibrated against a graph whose wiring is known from a screenshot.
+func dumpPins(payload []byte) string {
+	var b strings.Builder
+	top, ok := parseMessage(payload)
+	if !ok {
+		return "payload does not parse\n"
+	}
+	for _, g := range top {
+		if g.N != 1 || g.Wire != 2 {
+			continue
+		}
+		body := graphBody(g.Bytes)
+		if body == nil {
+			continue
+		}
+		name := ""
+		for _, bf := range body {
+			if bf.N == 2 && bf.Wire == 2 && isTexty(bf.Bytes) {
+				name = string(bf.Bytes)
+			}
+		}
+		fmt.Fprintf(&b, "\n=== graph %q ===\n", name)
+		for _, bf := range body {
+			if bf.N != 3 || bf.Wire != 2 {
+				continue
+			}
+			entry, ok := parseMessage(bf.Bytes)
+			if !ok {
+				continue
+			}
+			idx, typeID := 0, uint64(0)
+			var pins [][]byte
+			for _, ef := range entry {
+				switch {
+				case ef.N == 1 && ef.Wire == 0:
+					idx = int(ef.Varint)
+				case ef.N == 2 && ef.Wire == 2:
+					if rec, ok := parseMessage(ef.Bytes); ok {
+						for _, rf := range rec {
+							if rf.N == 5 && rf.Wire == 0 {
+								typeID = rf.Varint
+							}
+						}
+					}
+				case ef.N == 4 && ef.Wire == 2:
+					pins = append(pins, ef.Bytes)
+				}
+			}
+			fmt.Fprintf(&b, "  node %d type %d  (%d pins, entry %d bytes)\n", idx, typeID, len(pins), len(bf.Bytes))
+			for i, pin := range pins {
+				pf, ok := parseMessage(pin)
+				if !ok {
+					fmt.Fprintf(&b, "    pin%d raw %s\n", i, shortHex(pin, 24))
+					continue
+				}
+				parts := []string{}
+				for _, c := range pf {
+					if (c.N == 1 || c.N == 2) && c.Wire == 2 {
+						if inner, ok := parseMessage(c.Bytes); ok {
+							kv := []string{}
+							for _, x := range inner {
+								if x.Wire == 0 {
+									kv = append(kv, fmt.Sprintf("f%d=%d", x.N, x.Varint))
+								}
+							}
+							parts = append(parts, fmt.Sprintf("f%d{%s}", c.N, strings.Join(kv, ",")))
+						}
+					}
+				}
+				fmt.Fprintf(&b, "    pin%d len=%d  %s\n", i, len(pin), strings.Join(parts, "  |  "))
+			}
+		}
+	}
+	return b.String()
 }
