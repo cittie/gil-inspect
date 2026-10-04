@@ -147,7 +147,41 @@ descriptors are located and are small, repeated messages of index references —
 next decoding step. Until then the ASCII diagram shows **layout** (boxes at their real
 relative positions) but not wiring.
 
-## 6b. Link extraction: first attempt is NOT trustworthy yet
+## 6b. Ground truth for calibration (关卡-建筑销毁, 12 nodes)
+
+Established from two screenshots of the real graph cross-checked against the extracted node
+list (count, type multiplicity, and relative positions all agree — the second screenshot is
+≈1:1 with stored editor units, offset ≈ (+453, +473) on screen).
+
+Node ids → names (type ids now in `node-types.txt`):
+
+| # | node | # | node |
+| --- | --- | --- | --- |
+| 1 | 终止定时器 | 11 | 数据类型转换 |
+| 2 | 查询自定义变量快照 | 12 | 设置阵营结算成功状态 (阵营4, 失败) |
+| 3 | 实体销毁时 | 13 | 设置阵营结算成功状态 (阵营5, 胜利) |
+| 4 | 双分支 | 14 | 设置阵营结算成功状态 (阵营4, 胜利) |
+| 6 | 是否相等 | 15 | 设置阵营结算成功状态 (阵营5, 失败) |
+| 10 | 多分支 | 16 | 结算关卡 |
+
+**The 14 real edges** (exec = white wires, data = blue wires):
+
+| kind | edges |
+| --- | --- |
+| exec | 3→4, 4→1 (是), 1→10, 10→12 (case 4), 12→13, 13→16, 10→14 (case 5), 14→15, 15→16 |
+| data | 3→2 (自定义变量组件快照), 2→6 (变量值), 6→4 (结果→条件), 3→4 (自定义变量组件快照→条件), 3→11 (阵营), 11→10 (输出→控制表达式) |
+
+Unconnected: 双分支「否」and 多分支「默认」.
+
+**Current extraction matches only 2 of these 14** (3-4 and 3-11) and invents ~16 others, all of
+them hanging off nodes 2 and 3 — i.e. the reader is picking up **"where this pin's value comes
+from"** references, not execution wires. This table is the calibration target: a decoder is
+correct only when it reproduces exactly these 14 edges, in this direction, and nothing else.
+
+Note that node indices are **not contiguous** (1,2,3,4,6,10,11,…): entries for 5, 7, 8, 9 are
+not nodes. Whatever they are, they must be classified before indices can be trusted as identity.
+
+## 6c. Link extraction: first attempt is NOT trustworthy yet
 
 A first pass extracts candidate links from the pin descriptors (direct `f1`/`f2` children of
 each node entry's `f4`, resolved against the graph's own node indices). It produces output,

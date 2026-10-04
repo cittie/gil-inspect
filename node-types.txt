@@ -1,3 +1,20 @@
-# id<TAB>name  - node type lookup (fill from any source you prefer)
-# 3360 sits on the node whose subtree mentions isBase -> custom variable snapshot
+# node type lookup table - "id<TAB>name", one per line, '#' starts a comment
+#
+# The tool only READS this file; it is deliberately not bundled in the repository.
+#
+# The first nine entries were derived from our own level (a screenshot of the 关卡-建筑销毁
+# graph next to the extracted data), verified three ways:
+#   1. node count matches (12 nodes / 12 entries)
+#   2. type multiplicity matches (656 appears 4x = four 设置阵营结算成功状态 nodes)
+#   3. relative positions match (linear fit of screen x -> stored x; y axis points down)
+# No third-party data was used for these lines.
+
+373	实体销毁时
+2	双分支
+14	是否相等
+82	终止定时器
 3360	查询自定义变量快照
+180	数据类型转换
+3	多分支
+656	设置阵营结算成功状态
+77	结算关卡
