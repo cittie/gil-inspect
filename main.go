@@ -46,6 +46,10 @@ func main() {
 	keyFile := flag.String("keyfile", "gil-keys.json", "optional UTF-8 JSON array of extra keywords")
 	out := flag.String("out", "", "markdown report path (default <name>.inspect.md)")
 	snap := flag.String("snapshot", "", "snapshot path (default <dir>/gil-snapshot.json)")
+	graphDump := flag.Bool("graphdump", false, "also dump the node-graph field as an indented Markdown tree")
+	graphs := flag.Bool("graphs", false, "write the node graphs as a plain-text/markdown intermediate file")
+	nodeTypes := flag.String("nodetypes", "node-types.txt", "id<TAB>name lookup table for node types")
+	graphField := flag.Int("graphfield", 10, "container field number that holds node graphs")
 	flag.Parse()
 
 	if *path == "" {
@@ -101,6 +105,45 @@ func main() {
 	if err := os.WriteFile(*out, []byte(report), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "cannot write report:", err)
 		os.Exit(1)
+	}
+
+	if *graphDump {
+		base := strings.TrimSuffix(*path, filepath.Ext(*path))
+		treePath := fmt.Sprintf("%s.graph-f%d.md", base, *graphField)
+		tree, ok := dumpField(raw, *graphField, filepath.Base(*path))
+		if !ok {
+			fmt.Fprintf(os.Stderr, "field %d not found (or is not length-delimited)\n", *graphField)
+		} else if err := os.WriteFile(treePath, []byte(tree), 0o644); err != nil {
+			fmt.Fprintln(os.Stderr, "cannot write graph dump:", err)
+		} else {
+			fmt.Printf("graph dump: %s\n", treePath)
+		}
+	}
+
+	if *graphs {
+		base := strings.TrimSuffix(*path, filepath.Ext(*path))
+		outPath := fmt.Sprintf("%s.graphs.md", base)
+		if payload, ok := fieldPayload(raw, *graphField); ok {
+			gs := extractGraphs(payload)
+			table := loadNodeTypes(*nodeTypes)
+			report := renderGraphs(filepath.Base(*path), gs, table)
+			if err := os.WriteFile(outPath, []byte(report), 0o644); err != nil {
+				fmt.Fprintln(os.Stderr, "cannot write graphs file:", err)
+			} else {
+				total, unknown := 0, map[uint64]bool{}
+				for _, g := range gs {
+					total += len(g.Nodes)
+					for _, n := range g.Nodes {
+						if table[n.TypeID] == "" {
+							unknown[n.TypeID] = true
+						}
+					}
+				}
+				fmt.Printf("graphs    : %s (%d graphs, %d nodes, %d unmapped types)\n", outPath, len(gs), total, len(unknown))
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "field %d not found (or is not length-delimited)\n", *graphField)
+		}
 	}
 
 	// console summary

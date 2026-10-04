@@ -1,0 +1,3 @@
+# id<TAB>name  - node type lookup (fill from any source you prefer)
+# 3360 sits on the node whose subtree mentions isBase -> custom variable snapshot
+3360	查询自定义变量快照
