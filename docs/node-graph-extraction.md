@@ -147,6 +147,47 @@ descriptors are located and are small, repeated messages of index references —
 next decoding step. Until then the ASCII diagram shows **layout** (boxes at their real
 relative positions) but not wiring.
 
+## 6b. Link extraction: first attempt is NOT trustworthy yet
+
+A first pass extracts candidate links from the pin descriptors (direct `f1`/`f2` children of
+each node entry's `f4`, resolved against the graph's own node indices). It produces output,
+but the result does not yet look like real wiring:
+
+```
+## 关卡-建筑销毁   (12 nodes)
+links:
+  1 - 2      2 - 3      2 - 4      2 - 10     2 - 12     2 - 13   …
+  1 - 3      3 - 4      3 - 6      3 - 10     3 - 12     3 - 13   …
+```
+
+Two problems:
+
+1. **Hub pattern** — nodes 2 and 3 end up connected to almost everything. Either they are
+   genuine fan-out nodes, or (more likely) the reader is mixing **variable/slot references**
+   into the link set.
+2. **Direction unknown** — nothing in the pin bytes yet says which end is source and which is
+   target, so the set is deliberately published as **undirected pairs**.
+
+**The ASCII flow style needs both of these fixed**, because a vertical flow is defined by
+wiring order, not by coordinates.
+
+### Controlled probe that settles it in one export
+
+Please build one scratch graph with **exactly** this shape and export it:
+
+```
+[实体创建时] ──► [设置自定义变量] ──► [发送信号]
+```
+
+- no branches, no loops, no variables other than the one 设置自定义变量 writes
+- three nodes only, connected left to right in that order
+
+With a chain this small, the pin bytes are unambiguous: whatever changes when the chain is
+reversed is the source/target field, and the rest is noise we can then filter out. From that
+one file we can calibrate the reader, re-run it on the real level, and only then draw flow
+diagrams. A second graph containing a single 查询自定义变量节点 (nothing else) would separate
+"variable reference" bytes from "wire" bytes.
+
 **Node index gaps** (1,2,3,4,6,10,…) suggest some entries in `f3` are not nodes — possibly
 group/frame records or pin-only entries. Worth classifying before the index is trusted as an
 identity.

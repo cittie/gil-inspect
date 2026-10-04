@@ -100,11 +100,39 @@ type gNode struct {
 	HasPos bool
 	Title  string
 	Texts  []string
+	Pins   [][]byte // raw pin descriptors (f4 of the node entry)
 }
 
 type gGraph struct {
 	Name  string
 	Nodes []gNode
+	Links [][2]int // undirected connections between node indices
+}
+
+// pinRefs pulls candidate node-index references out of one pin descriptor.
+//
+// A pin descriptor looks like: f1 {f1: <node>, f2: <pin>}, f2 {f1: <node>, f2: <pin>},
+// sometimes f3 {…payload…}, f4 <small int>. Only the direct f1/f2 children are read, because
+// deeper messages (f5 etc.) carry variable/slot indices that would collide with node indices.
+func pinRefs(pin []byte) []int {
+	fields, ok := parseMessage(pin)
+	if !ok {
+		return nil
+	}
+	out := []int{}
+	for _, f := range fields {
+		if (f.N == 1 || f.N == 2) && f.Wire == 2 {
+			if inner, ok := parseMessage(f.Bytes); ok {
+				for _, g := range inner {
+					if g.N == 1 && g.Wire == 0 {
+						out = append(out, int(g.Varint))
+						break
+					}
+				}
+			}
+		}
+	}
+	return out
 }
 
 // collectTexts walks a node entry's subtree and gathers every readable string together with
@@ -211,6 +239,8 @@ func extractGraphs(payload []byte) []gGraph {
 						node.HasPos = true
 					case ef.N == 6 && ef.Wire == 5:
 						node.Y = f32(ef.Bytes)
+					case ef.N == 4 && ef.Wire == 2:
+						node.Pins = append(node.Pins, ef.Bytes)
 					}
 				}
 				labels := map[string]string{}
@@ -225,6 +255,30 @@ func extractGraphs(payload []byte) []gGraph {
 			}
 		}
 		if cur.Name != "" || len(cur.Nodes) > 0 {
+			// resolve links: any pin reference that names another node in the same graph
+			valid := map[int]bool{}
+			for _, n := range cur.Nodes {
+				valid[n.Index] = true
+			}
+			seen := map[[2]int]bool{}
+			for _, n := range cur.Nodes {
+				for _, pin := range n.Pins {
+					for _, ref := range pinRefs(pin) {
+						if ref == n.Index || !valid[ref] {
+							continue
+						}
+						a, b := n.Index, ref
+						if a > b {
+							a, b = b, a
+						}
+						if seen[[2]int{a, b}] {
+							continue
+						}
+						seen[[2]int{a, b}] = true
+						cur.Links = append(cur.Links, [2]int{a, b})
+					}
+				}
+			}
 			graphs = append(graphs, cur)
 		}
 	}
@@ -261,38 +315,47 @@ func loadNodeTypes(path string) map[uint64]string {
 	return out
 }
 
-// renderGraphs produces the Markdown intermediate file (no JSON anywhere).
+// renderGraphs produces the plain-text intermediate file (no JSON anywhere).
+//
+// Deliberately minimal: node id + resolved name + optional custom title + refs, then links.
+// Positions are omitted - they are noise once you render a vertical flow instead of a canvas.
 func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# node graphs - %s\n\n", srcName)
-	fmt.Fprintf(&b, "graphs: %d\n\n", len(graphs))
+	fmt.Fprintf(&b, "graphs: %d\n", len(graphs))
 	freq := map[uint64]int{}
 	for _, g := range graphs {
-		fmt.Fprintf(&b, "## %s\n\n", g.Name)
-		fmt.Fprintf(&b, "nodes: %d\n\n", len(g.Nodes))
-		b.WriteString("| # | type | name | pos | refs |\n")
-		b.WriteString("| --- | --- | --- | --- | --- |\n")
+		fmt.Fprintf(&b, "\n## %s\n\n", g.Name)
+		b.WriteString("nodes:\n")
 		for _, n := range g.Nodes {
 			name := types[n.TypeID]
 			if name == "" {
-				name = fmt.Sprintf("? type %d", n.TypeID)
+				name = fmt.Sprintf("?%d", n.TypeID)
 			}
 			freq[n.TypeID]++
-			pos := ""
-			if n.HasPos {
-				pos = fmt.Sprintf("(%.4g, %.4g)", n.X, n.Y)
-			}
-			refs := ""
-			if len(n.Texts) > 0 {
-				refs = strings.Join(uniqStrings(n.Texts), ", ")
-			}
-			title := ""
+			line := fmt.Sprintf("  %d\t%s", n.Index, name)
 			if n.Title != "" {
-				title = "**" + n.Title + "** "
+				line += "\t\"" + n.Title + "\""
 			}
-			fmt.Fprintf(&b, "| %d | %d | %s%s | %s | %s |\n", n.Index, n.TypeID, title, name, pos, refs)
+			kept := []string{}
+			for _, r := range uniqStrings(n.Texts) {
+				if r != n.Title {
+					kept = append(kept, r)
+				}
+			}
+			if len(kept) > 0 {
+				line += "\trefs: " + strings.Join(kept, ",")
+			}
+			b.WriteString(line + "\n")
 		}
-		b.WriteString("\n")
+		b.WriteString("links:\n")
+		if len(g.Links) == 0 {
+			b.WriteString("  (none)\n")
+		} else {
+			for _, l := range g.Links {
+				fmt.Fprintf(&b, "  %d - %d\n", l[0], l[1])
+			}
+		}
 	}
 	unknown := []uint64{}
 	for id, c := range freq {
