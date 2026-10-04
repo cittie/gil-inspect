@@ -42,6 +42,7 @@ down in [docs/node-graph-extraction.md](docs/node-graph-extraction.md).
 gil-inspect -path <file.gil> [flags]
 
   -graphs          write <name>.graphs.md  - the plain-text intermediate file
+  -lint            write <name>.lint.md    - routine sanity checks (see below)
   -nodetypes FILE  type lookup table (default node-types.txt)
   -graphfield N    container field holding node graphs (default 10)
   -graphdump       write <name>.graph-fN.md - full indented tree (decoding aid)
@@ -74,6 +75,30 @@ nodes:
 links:
   # EXPERIMENTAL - not verified, do not trust yet
 ```
+
+## Routine checks (`-lint`)
+
+Static checks that need no input from you:
+
+| check | what it looks for |
+| --- | --- |
+| `dangling-reference` | an identifier that **only ever appears in the node-graph section** — if it is a variable name, nothing declares it (the exact "used in a graph but never configured on an element or the level" case) |
+| `graph-only-name` | a CJK name living only in graphs: suspicious if it is a variable, normal if it is a compound node, a node's custom title or a timer name |
+| `similar-names` | one name is a prefix of another (easy to confuse, e.g. `选阵营` vs `选完阵营`) |
+| `naming-style-mix` | snake_case and camelCase used side by side |
+| `banned-name` | names that read as "my side / enemy side" — the architecture is symmetric |
+| `graph-large` / `empty-graph` | per-graph node counts against the platform limits |
+| `parse-health` | the top-level field walk stopped well before the end of the file |
+
+Two things to keep in mind:
+
+- every finding is a **thing to verify**, not a verdict — the container simply does not carry
+  enough context to be certain (an identifier seen only in graphs may legitimately be a graph
+  name or a timer name);
+- nothing is ever auto-fixed, and there is no "apply suggestion" mode. The tool stays read-only.
+
+The report opens with the graph names it recognised, because those are expected to appear only
+in the graph section and would otherwise look like findings.
 
 ## Node type names: `node-types.txt`
 

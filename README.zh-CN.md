@@ -39,6 +39,7 @@ gil-inspect -path export/MyLevel.gil -graphs
 gil-inspect -path <存档.gil> [参数]
 
   -graphs          输出 <名字>.graphs.md —— 纯文本中间文件
+  -lint            输出 <名字>.lint.md —— 常规检查（见下）
   -nodetypes FILE  节点类型映射表（默认 node-types.txt）
   -graphfield N    存放节点图的容器字段号（默认 10）
   -graphdump       输出 <名字>.graph-fN.md —— 完整缩进树（解码用辅助）
@@ -71,6 +72,27 @@ nodes:
 links:
   # EXPERIMENTAL - not verified, do not trust yet
 ```
+
+## 常规检查（`-lint`）
+
+不需要你额外提供信息就能跑的静态检查：
+
+| 检查项 | 找什么 |
+| --- | --- |
+| `dangling-reference` | 某个标识符**只在节点图区出现过** —— 若它是变量名，说明没有任何组件声明它（即「图里用了、但元件/关卡上没配」这种情况） |
+| `graph-only-name` | 只出现在图区的中文名：是变量就值得怀疑，是复合节点 / 节点自定义标题 / 定时器名则正常 |
+| `similar-names` | 一个名字是另一个的前缀（易混，如 `选阵营` 与 `选完阵营`） |
+| `naming-style-mix` | snake_case 与 camelCase 混用 |
+| `banned-name` | 读起来像「我方 / 敌方」的命名 —— 本架构是对称双阵营 |
+| `graph-large` / `empty-graph` | 每张图的节点数（对照平台上限） |
+| `parse-health` | 顶层字段走查在文件结束前很远就停了 |
+
+两点务必记住：
+
+- 每条都是**待核对项，不是判定** —— `.gil` 里没有足够上下文来确证（只在图区出现的标识符，完全可能是图名或定时器名）；
+- **从不自动修复**，也没有「一键应用建议」模式 —— 本工具始终只读。
+
+报告开头会列出**已识别的图名**，因为这些名字本来就只出现在图区，否则会被误当问题。
 
 ## 节点类型名：`node-types.txt`
 

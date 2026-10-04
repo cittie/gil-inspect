@@ -49,6 +49,7 @@ func main() {
 	graphDump := flag.Bool("graphdump", false, "also dump the node-graph field as an indented Markdown tree")
 	graphs := flag.Bool("graphs", false, "write the node graphs as a plain-text/markdown intermediate file")
 	pins := flag.Bool("pins", false, "debug: print every pin descriptor in raw form (calibration aid)")
+	lint := flag.Bool("lint", false, "write <name>.lint.md - routine sanity checks (dangling references, naming, graph size)")
 	nodeTypes := flag.String("nodetypes", "node-types.txt", "id<TAB>name lookup table for node types")
 	graphField := flag.Int("graphfield", 10, "container field number that holds node graphs")
 	flag.Parse()
@@ -156,6 +157,34 @@ func main() {
 			} else {
 				fmt.Printf("pin dump  : %s\n", outPath)
 			}
+		}
+	}
+
+	if *lint {
+		base := strings.TrimSuffix(*path, filepath.Ext(*path))
+		outPath := fmt.Sprintf("%s.lint.md", base)
+		findings := lintExport(raw, *graphField)
+		names := []string{}
+		if payload, ok := fieldPayload(raw, *graphField); ok {
+			for _, g := range extractGraphs(payload) {
+				if g.Name != "" {
+					names = append(names, g.Name)
+				}
+			}
+		}
+		if err := os.WriteFile(outPath, []byte(renderLint(filepath.Base(*path), findings, names)), 0o644); err != nil {
+			fmt.Fprintln(os.Stderr, "cannot write lint report:", err)
+		} else {
+			errs, warns := 0, 0
+			for _, f := range findings {
+				switch f.Level {
+				case "error":
+					errs++
+				case "warn":
+					warns++
+				}
+			}
+			fmt.Printf("lint      : %s (%d error, %d warn)\n", outPath, errs, warns)
 		}
 	}
 
