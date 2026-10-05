@@ -78,6 +78,14 @@ links:
 
 ## Routine checks (`-lint`)
 
+> 🚫 **Not a replacement for the editor's own checks.** The platform ships two:
+> **试玩校验** (playtest validation — blocking errors that stop a playtest) and
+> **风险检查** (risk check — non-blocking prompts about discouraged configuration or hidden
+> rules, usually data-level mistakes). **Whatever they report is authoritative**; `-lint`
+> deliberately aims at what they do *not* see: naming conventions, consistency across
+> separately-configured places, and the state of the file itself. If a check here turns out to
+> duplicate a built-in one, it should be dropped rather than maintained twice.
+
 Static checks that need no input from you:
 
 | check | what it looks for |

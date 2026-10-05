@@ -243,6 +243,11 @@ func renderLint(srcName string, findings []Finding, graphNames []string) string 
 
 	fmt.Fprintf(&b, "# 常规检查 - %s\n\n", srcName)
 	fmt.Fprintf(&b, "error %d ｜ warn %d ｜ info %d\n\n", counts["error"], counts["warn"], counts["info"])
+	b.WriteString("> 🚫 **本报告不替代编辑器自带的检查。** 官方有两道：\n")
+	b.WriteString("> **试玩校验**（阻断性错误，会阻止试玩）与 **风险检查**（非阻断提示，多是数据上的错误）。\n")
+	b.WriteString("> **官方能查出来的一律以官方为准** —— 本工具只补它们看不到的那些：\n")
+	b.WriteString("> 命名约定、跨位置引用的一致性、以及**文件本身**的状态。\n")
+	b.WriteString(">\n")
 	b.WriteString("> ⚠️ 这些是**待核对项**，不是判定：`.gil` 里没有足够上下文来确证。\n")
 	b.WriteString("> 判据说明：某个标识符**只在节点图里出现**、文件其它部分（元件/实体/关卡定义）一次都没有\n")
 	b.WriteString("> —— 若它是变量名，就属于「图里用了但没配到任何组件上」。\n\n")
