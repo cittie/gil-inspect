@@ -1,0 +1,22 @@
+# Custom-variable type ids  ->  names
+#
+# Same idea as node-types.txt: the .gil stores an internal id for each variable's declared
+# type, so this file maps ids to names. The tool only READS it; nothing is bundled beyond the
+# ids verified against our own level, and you can extend it from any source you prefer.
+#
+# Format: id<TAB>name     ('#' starts a comment)
+#
+# Verified empirically on 2026-10-05 against variables whose types we know from building the
+# level, so these three are facts rather than guesses:
+#
+#	4	布尔		(isBase)
+#	10	浮点		(spawn_interval)
+#	21	元件ID		(spawn_unit)
+#
+# They are already built into the tool; listing them here documents the format.
+# Unmapped ids appear in the -lint report as "type N（未映射）" together with the variable name,
+# which is usually enough to identify them.
+#
+# 4	布尔
+# 10	浮点
+# 21	元件ID

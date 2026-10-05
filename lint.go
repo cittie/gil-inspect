@@ -57,10 +57,11 @@ func lintExport(raw []byte, graphField int) []Finding {
 		findings = append(findings, Finding{Level: level, Code: code, What: what})
 	}
 
-	graphPayload, ok := fieldPayload(raw, graphField)
-	if !ok {
-		add("error", "parse-graph-field", fmt.Sprintf("容器字段 f%d 找不到或不是长度分隔字段：无法检查节点图", graphField))
-		return findings
+	// A missing graph field must not abort the checks that do not depend on graphs
+	// (variable declarations are checked even in a level that has no graphs at all).
+	graphPayload, hasGraphs := fieldPayload(raw, graphField)
+	if !hasGraphs {
+		add("error", "parse-graph-field", fmt.Sprintf("容器字段 f%d 找不到或不是长度分隔字段：无法检查节点图（变量检查仍会执行）", graphField))
 	}
 	if _, walkErr := parseFields(raw, 20); walkErr != "" {
 		// Observed exports end with a few bytes that are not a valid field (e.g. "stopped at
@@ -71,13 +72,17 @@ func lintExport(raw []byte, graphField int) []Finding {
 	}
 
 	whole := string(raw)
-	graphText := string(graphPayload)
+	graphText := ""
+	graphs := []gGraph{}
+	if hasGraphs {
+		graphText = string(graphPayload)
+		graphs = extractGraphs(graphPayload)
+	}
 
 	// --- candidate identifiers that graphs reference ---
 	graphIDs := uniqSorted(matches(idRe, graphText))
 	graphCJK := uniqSorted(matches(cjkRe, graphText))
 
-	graphs := extractGraphs(graphPayload)
 	declaredGraphNames := map[string]bool{}
 	for _, g := range graphs {
 		if g.Name != "" {
@@ -171,6 +176,9 @@ func lintExport(raw []byte, graphField int) []Finding {
 			add("warn", "graph-large", fmt.Sprintf("图 `%s` 有 %d 个节点，接近可维护上限（平台上限 3000）", g.Name, n))
 		}
 	}
+
+	// --- custom variables: declared types (the "type written as 整数" class of bug) ---
+	lintVariables(raw, knownVarTypes, add)
 
 	if len(findings) == 0 {
 		add("info", "clean", "常规检查未发现问题")

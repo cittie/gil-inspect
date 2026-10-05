@@ -172,7 +172,10 @@ func main() {
 				}
 			}
 		}
-		if err := os.WriteFile(outPath, []byte(renderLint(filepath.Base(*path), findings, names)), 0o644); err != nil {
+		varTypes := loadVarTypes("var-types.txt")
+		decls := scanVariableDeclarations(raw)
+		report := renderLint(filepath.Base(*path), findings, names) + renderVarTable(decls, varTypes)
+		if err := os.WriteFile(outPath, []byte(report), 0o644); err != nil {
 			fmt.Fprintln(os.Stderr, "cannot write lint report:", err)
 		} else {
 			errs, warns := 0, 0

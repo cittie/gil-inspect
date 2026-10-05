@@ -83,6 +83,10 @@ Static checks that need no input from you:
 | check | what it looks for |
 | --- | --- |
 | `dangling-reference` | an identifier that **only ever appears in the node-graph section** — if it is a variable name, nothing declares it (the exact "used in a graph but never configured on an element or the level" case) |
+| `reference-typed-as-number` | a variable whose name reads like a **reference** (`*_unit`, `*_id`, 元件, 模板) but is declared as a **numeric** type — this is the "element id stored in an integer" bug, where the mechanism silently does nothing |
+| `variable-type-conflict` | the **same variable name declared with different types** in different places |
+| `default-value-type-mismatch` | the declared type and the encoded default value disagree |
+| `unmapped-variable-type` | a type id with no name yet (add it to `var-types.txt`; harmless on its own) |
 | `graph-only-name` | a CJK name living only in graphs: suspicious if it is a variable, normal if it is a compound node, a node's custom title or a timer name |
 | `similar-names` | one name is a prefix of another (easy to confuse, e.g. `选阵营` vs `选完阵营`) |
 | `naming-style-mix` | snake_case and camelCase used side by side |
@@ -99,6 +103,20 @@ Two things to keep in mind:
 
 The report opens with the graph names it recognised, because those are expected to appear only
 in the graph section and would otherwise look like findings.
+
+It also ends with an inventory of **every declared custom variable** — name, declared type,
+how many declaration sites carry it, and its default value when one is stored:
+
+```
+| variable | type | sites | default |
+| spawn_interval | 浮点 | 12 | 12 |
+| spawn_unit | 元件ID | 12 | — |
+| isBase | 布尔 | 4 | — |
+```
+
+Type ids are internal. Three are verified against variables whose types we know from building
+the level — **4 = 布尔, 10 = 浮点, 21 = 元件ID** — and the rest print as `type N（未映射）`;
+add them to `var-types.txt` (same shape as `node-types.txt`, not bundled here).
 
 ## Node type names: `node-types.txt`
 
