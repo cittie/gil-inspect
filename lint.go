@@ -173,7 +173,9 @@ func lintExport(raw []byte, graphField int) []Finding {
 		case n > 3000:
 			add("error", "graph-too-large", fmt.Sprintf("图 `%s` 有 %d 个节点，超过平台硬上限 3000", g.Name, n))
 		case n > 300:
-			add("warn", "graph-large", fmt.Sprintf("图 `%s` 有 %d 个节点，接近可维护上限（平台上限 3000）", g.Name, n))
+			// Kept as info on purpose: hard limits are the editor's business (风险检查 may
+			// well cover them), so this only nudges when a graph becomes hard to maintain.
+			add("info", "graph-large", fmt.Sprintf("图 `%s` 有 %d 个节点，接近可维护上限（平台上限 3000）", g.Name, n))
 		}
 	}
 
@@ -247,6 +249,7 @@ func renderLint(srcName string, findings []Finding, graphNames []string) string 
 	b.WriteString("> **试玩校验**（阻断性错误，会阻止试玩）与 **风险检查**（非阻断提示，多是数据上的错误）。\n")
 	b.WriteString("> **官方能查出来的一律以官方为准** —— 本工具只补它们看不到的那些：\n")
 	b.WriteString("> 命名约定、跨位置引用的一致性、以及**文件本身**的状态。\n")
+	b.WriteString("> ✅ 已实测确认的盲区（保留在本工具里）：**自定义变量类型写错** —— 官方风险检查不报。\n")
 	b.WriteString(">\n")
 	b.WriteString("> ⚠️ 这些是**待核对项**，不是判定：`.gil` 里没有足够上下文来确证。\n")
 	b.WriteString("> 判据说明：某个标识符**只在节点图里出现**、文件其它部分（元件/实体/关卡定义）一次都没有\n")

@@ -85,6 +85,10 @@ links:
 > deliberately aims at what they do *not* see: naming conventions, consistency across
 > separately-configured places, and the state of the file itself. If a check here turns out to
 > duplicate a built-in one, it should be dropped rather than maintained twice.
+>
+> ✅ **Verified blind spot (2026-10-05):** declaring a custom variable with the wrong **type**
+> (e.g. an element id stored in an 整数) is **not** reported by 风险检查 — the mechanism just
+> silently does nothing. The variable-type checks below exist for exactly that gap.
 
 Static checks that need no input from you:
 
