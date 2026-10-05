@@ -49,13 +49,23 @@ func main() {
 	graphDump := flag.Bool("graphdump", false, "also dump the node-graph field as an indented Markdown tree")
 	graphs := flag.Bool("graphs", false, "write the node graphs as a plain-text/markdown intermediate file")
 	pins := flag.Bool("pins", false, "debug: print every pin descriptor in raw form (calibration aid)")
-	lint := flag.Bool("lint", false, "write <name>.lint.md - routine sanity checks (dangling references, naming, graph size)")
+	lint := flag.Bool("lint", false, "write <name>.lint.md - routine sanity checks (dangling references, naming, graph size, variable types)")
+	scan := flag.String("scan", "", "walk a .gil file or a directory of them: summary table + type-id unions")
 	nodeTypes := flag.String("nodetypes", "node-types.txt", "id<TAB>name lookup table for node types")
 	graphField := flag.Int("graphfield", 10, "container field number that holds node graphs")
 	flag.Parse()
 
+	if *scan != "" {
+		nodeTypeNames = loadNodeTypes(*nodeTypes)
+		if err := scanPath(*scan, *graphField); err != nil {
+			fmt.Fprintln(os.Stderr, "scan failed:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	if *path == "" {
-		fmt.Fprintln(os.Stderr, "usage: gil-inspect -path <file.gil>")
+		fmt.Fprintln(os.Stderr, "usage: gil-inspect -path <file.gil>   (or -scan <dir> for a batch summary)")
 		os.Exit(2)
 	}
 	if *out == "" {

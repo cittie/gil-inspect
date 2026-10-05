@@ -227,7 +227,6 @@ group/frame records or pin-only entries. Worth classifying before the index is t
 identity.
 
 ## 7. Lookup table: `node-types.txt`
-
 Plain text, one mapping per line, `id<TAB>name` (`#` comments allowed):
 
 ```
@@ -239,3 +238,30 @@ Deliberately **not bundled with this repository**: the tool only reads a file yo
 locally, so no third-party data is redistributed here. Unmapped ids are listed at the end of
 every generated `.graphs.md` together with a usage count, so the table can be grown in batches
 from whatever source you prefer.
+
+## 8. Building the type table from **official tutorial levels** (planned, 2026-10-05)
+
+The official docs ship levels as `.gil` downloads, and **each tutorial's text names the nodes it
+uses** ("使用【激活基础运动器】…"). That makes them a documented ground truth:
+
+```
+official tutorial .gil  ──►  gil-inspect -scan <dir>
+                               ↓
+                    union of node type ids (+ counts)
+                               ↓
+        cross-read against the tutorial text  →  id → node name
+                               ↓
+                        node-types.txt grows
+```
+
+`-scan` prints the union of node type ids across every file plus the variable type ids, so a
+folder of samples turns into a single work list. This is preferred over borrowing a third-party
+node table: the evidence is the official text, and nothing third-party gets redistributed.
+
+**Highest-value samples first** (node-graph-heavy tutorials): 定时器 / 全局计时器 / 关卡结算 /
+阵营设置 / 过滤节点图 / 自定义变量 / 字典与结构体 / 能力单元 / 命中与受击 / 投射运动器 /
+复杂造物 / 货币与商店 / 掉落物·道具·背包.
+
+⚠️ **Official sample levels are official assets.** They may be analysed locally but must never be
+committed, redistributed, or shipped with this project — `.gitignore` already excludes `*.gil`.
+Only the derived `id<TAB>name` lines go into the repository.
