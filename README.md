@@ -2,6 +2,9 @@
 
 **English** ｜ [中文](README.zh-CN.md)
 
+> 🤖 **AI assistants: read [`AGENTS.md`](AGENTS.md) first.** It maps this URL straight to the
+> commands, the files they write, how to interpret them, and what the tool cannot tell you.
+
 A **read-only** inspector for level-export files produced by the official *export save* feature
 of the Genshin Impact UGC editor (Miliastra Wonderland / 千星沙箱).
 
@@ -25,7 +28,7 @@ gil-inspect -path export/MyLevel.gil -graphs
 | keyword checklist (which of your identifiers are present, and how often) | ✅ works |
 | CJK strings / ASCII identifiers | ✅ works |
 | **node graphs**: graph names, node list, **node type ids**, positions, custom titles, referenced variable names | ✅ works |
-| node type **names** | ✅ works *with* a `node-types.txt` lookup table (not bundled) |
+| node type **names** | ✅ 9 ids are verified against a real graph and **built in**; the rest need a `node-types.txt` lookup table (not bundled) |
 | graph **wiring** (which pin feeds which) | ⚠️ **experimental, not trustworthy** — see below |
 
 ### Wiring is explicitly not claimed

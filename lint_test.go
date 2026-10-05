@@ -59,7 +59,7 @@ func TestLintIgnoresShortCodes(t *testing.T) {
 	}
 }
 
-// A graph name fragment (CJK) must not be reported as a dangling name.
+// Graph name fragments must not be reported as graph-only names.
 func TestLintIgnoresGraphNameFragments(t *testing.T) {
 	entry := encVarintField(1, 1)
 	body := encBytesField(2, []byte("关卡-建筑销毁"))
@@ -94,4 +94,33 @@ func hasFinding(findings []Finding, code, needle string) bool {
 		}
 	}
 	return false
+}
+
+// The platform only fires 实体销毁时 on the level entity's graphs, and we cannot read which
+// entity a graph belongs to -- so this must at least be *mentioned* whenever the node appears.
+func TestLintMentionsDestroyEventPlacement(t *testing.T) {
+	rec := encVarintField(5, 373) // 373 = 实体销毁时 (verified)
+	entry := encVarintField(1, 1)
+	entry = append(entry, encBytesField(2, rec)...)
+	body := encBytesField(2, []byte("元件上的销毁图"))
+	body = append(body, encBytesField(3, entry)...)
+	raw := buildLintContainer(encBytesField(1, body))
+
+	if !hasFinding(lintExport(raw, 10), "destroy-event-placement", "实体销毁时") {
+		t.Errorf("expected a destroy-event-placement reminder, got %+v", lintExport(raw, 10))
+	}
+}
+
+// A graph without a destroy event must not trigger it.
+func TestLintDestroyReminderOnlyWhenNodePresent(t *testing.T) {
+	rec := encVarintField(5, 2) // 双分支
+	entry := encVarintField(1, 1)
+	entry = append(entry, encBytesField(2, rec)...)
+	body := encBytesField(2, []byte("普通图"))
+	body = append(body, encBytesField(3, entry)...)
+	raw := buildLintContainer(encBytesField(1, body))
+
+	if hasFinding(lintExport(raw, 10), "destroy-event-placement", "") {
+		t.Error("no destroy event node is present, so the reminder must not fire")
+	}
 }

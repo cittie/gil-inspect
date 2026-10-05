@@ -285,9 +285,13 @@ func extractGraphs(payload []byte) []gGraph {
 	return graphs
 }
 
-// loadNodeTypes reads "id<TAB>name" lines. Missing file is not an error: names simply stay unknown.
+// loadNodeTypes merges the verified built-in names (nodetypes.go) with an optional
+// node-types.txt. Missing file is not an error: only the built-ins are used.
 func loadNodeTypes(path string) map[uint64]string {
 	out := map[uint64]string{}
+	for id, name := range builtinNodeTypes {
+		out[id] = name
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return out

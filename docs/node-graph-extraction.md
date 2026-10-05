@@ -265,3 +265,34 @@ node table: the evidence is the official text, and nothing third-party gets redi
 ⚠️ **Official sample levels are official assets.** They may be analysed locally but must never be
 committed, redistributed, or shipped with this project — `.gitignore` already excludes `*.gil`.
 Only the derived `id<TAB>name` lines go into the repository.
+
+## 9. Graph ownership: probed, and NOT derivable (2026-10-05)
+
+Needed for questions like *"「实体销毁时」 only fires on the level entity's graphs — is this graph
+attached to the level entity?"* (the official FAQ is explicit that the entity-destroy / remove
+events do nothing outside the level entity's graphs).
+
+`tools/probe_graph_ownership.py` (lives in the workspace, not in this repo) checked whether a
+graph id can be followed to its owner:
+
+```
+graphs found: 5, all reporting header id 10000
+→ occurrences of 10000 outside the graph field: 0 (for every graph)
+```
+
+Conclusions:
+
+1. The header id is **not per-graph identity** — every graph reports the same value, so it is a
+   scope/namespace marker rather than an owner. (In that level the graphs belong to *different*
+   entities: some to the level entity, some to a building element — a shared id cannot be owner.)
+2. The id is **never referenced outside the graph field**, so nothing we can read points from an
+   entity/element definition to the graphs attached to it.
+
+**Therefore ownership is not derivable from what is decoded so far.** Practical consequence:
+
+- "this graph must be attached to the level entity" can only ever be a **reminder that lists the
+  graphs containing such an event node** — which is exactly what the `destroy-event-placement`
+  lint does, and it says so in the finding text;
+- if real verification is ever wanted, the next place to look is how an entity's *node-graph
+  config* is stored — the graph-section wrapper carries an extra nesting level, and the entity
+  side may reference graphs by a hash instead of by this local id.

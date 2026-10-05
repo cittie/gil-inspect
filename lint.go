@@ -182,6 +182,32 @@ func lintExport(raw []byte, graphField int) []Finding {
 	// --- custom variables: declared types (the "type written as 整数" class of bug) ---
 	lintVariables(raw, knownVarTypes, add)
 
+	// --- destroy-event placement (advisory, not a verdict) ---
+	// The platform only fires 实体销毁时 / 实体移除 on the LEVEL ENTITY's graphs. We cannot read
+	// which entity a graph is attached to (see docs/node-graph-extraction.md: graph ids are
+	// scoped locally and never referenced elsewhere), so this can only be a reminder -- but it is
+	// the reminder that catches "attached it to the element and nothing happened".
+	nodeTypes := loadNodeTypes("node-types.txt")
+	for _, g := range graphs {
+		for _, n := range g.Nodes {
+			name := nodeTypes[n.TypeID]
+			isDestroy := false
+			for _, d := range destroyEventTypes {
+				if name == d {
+					isDestroy = true
+					break
+				}
+			}
+			if !isDestroy {
+				continue
+			}
+			add("warn", "destroy-event-placement",
+				fmt.Sprintf("图 `%s` 里用了【%s】：该事件**只在关卡实体的节点图上生效**（官方 FAQ）—— "+
+					"若这张图挂在元件 / 建筑上，销毁时会**静默不触发**。工具读不到图的挂载主体，请自行确认。", g.Name, name))
+			break
+		}
+	}
+
 	if len(findings) == 0 {
 		add("info", "clean", "常规检查未发现问题")
 	}
