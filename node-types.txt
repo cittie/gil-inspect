@@ -87,4 +87,18 @@
 250	设置实体阵营
 249	查询实体阵营
 
+# ---------------------------------------------------------------------------
+# Fifth batch (2026-10-07): from a screenshot of our own 选阵营 graph (3 nodes:
+# 实体创建时 / 拼装列表 / 唤起卡牌选择器). Coordinates decided the two ambiguous ones, and the
+# pack corroborated: 169 is used by a dozen unrelated compounds (time / random / matrix / 运算),
+# which is what a generic list builder looks like -- a card selector could never appear in a
+# matrix compound.
+#
+# Side observation from that screenshot: 卡牌选择器索引 reads 1073741847 = 0x40000000 + 23, i.e.
+# resource references carry the 0x40000000 base. (The asset pack's definition records all carried
+# a literal 23 in f1.f2 -- plausibly the same registry, but not yet proven.)
+632	唤起卡牌选择器
+169	拼装列表
+
+
 
