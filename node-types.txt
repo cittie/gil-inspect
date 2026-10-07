@@ -59,11 +59,12 @@
 #   83 定时器触发时      pack: "[时间]自身定时器触发时"; our 兵营出兵 graph opens with it
 #   252 创建元件         pack: all three "spawn an element" compounds use it; our 兵营出兵 node 2
 #                        is exactly where the unit gets created
-#   99 获取实体位置      pack: every position compound uses it; sits right before 创建元件 here
+#   99 获取实体位置与旋转  pack: every position compound uses it; confirmed by SCREENSHOT -- the
+#                        node feeding 创建元件's 位置/旋转 pins reads "获取实体位置与旋转"
 79	启动定时器
 83	定时器触发时
 252	创建元件
-99	获取实体位置
+99	获取实体位置与旋转
 
 # Inferred from graph structure rather than from a screenshot (lower confidence, still fits
 # every constraint we can check -- confirm against an editor screenshot before relying on them):
@@ -71,4 +72,19 @@
 #   633 卡牌选择器完成时    node 1 of 选完阵营, the only event that graph can start from
 71	实体创建时
 633	卡牌选择器完成时
+
+# ---------------------------------------------------------------------------
+# Fourth batch (2026-10-07): read off a screenshot of our own 兵营出兵 graph.
+#
+# How an ambiguous id gets settled with a screenshot: node entries store fixed32 x/y, and those
+# units are ~1:1 with editor pixels, so the screenshot gives a linear offset. Two already-known
+# nodes in the same image pinned the offset (≈1234, 599), the other eight known nodes then landed
+# within ~40 px of prediction, and the last two candidates -- 38,-192 vs -334,124 -- matched
+# 设置实体阵营 and 查询实体阵营 respectively. tools/probe_node_positions.py prints those
+# coordinates. The same screenshot also confirmed 99 and produced 618, which appears twice in
+# this graph exactly as 切换造物巡逻模板 does on screen.
+618	切换造物巡逻模板
+250	设置实体阵营
+249	查询实体阵营
+
 

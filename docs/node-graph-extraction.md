@@ -385,3 +385,33 @@ primitive N times is the author's own loop — its name describes *intent*, and 
 primitive, **not** the compound name. Getting this wrong is how a table fills with plausible junk.
 
 Remaining work list: the 12 ids still unmapped in our own level, plus the wider union from the pack.
+
+### 10c. Settling an ambiguous id with a screenshot (worked 2026-10-07)
+
+Some ids appear in no asset record at all, so the pack cannot name them — but a screenshot of the
+graph they live in can, and it does not need to be pixel-perfect.
+
+The trick: **node entries store fixed32 `x`/`y`** (fields 5 and 6 of the node entry) and those units
+are **≈1:1 with editor pixels**. So a screenshot relates to the stored coordinates by a simple
+translation:
+
+```
+stored ≈ image_pixel − offset        (offset derived from two already-known nodes)
+```
+
+Worked example — naming the last two ids of our `兵营出兵` graph:
+
+1. `tools/probe_node_positions.py <file.gil> --graph 兵营出兵` printed the ten nodes with their
+   coordinates. Two of them were already known, and in the image their on-screen positions differ
+   by the same delta as their stored coordinates → offset ≈ (1234, 599), scale 1:1.
+2. The other eight known nodes then landed within **~40 px** of prediction, which is what makes the
+   model trustworthy rather than fitted.
+3. The two remaining candidates, stored at `(38, −192)` and `(−334, 124)`, predicted the on-screen
+   positions of 设置实体阵营 and 查询实体阵营 respectively — so those are their ids.
+
+Two extra confirmations fell out of the same screenshot: the node feeding 创建元件's 位置/旋转 pins
+reads **获取实体位置与旋转** (not the shorter 获取实体位置 this table briefly claimed), and the id that
+appears **twice** in the graph is the one that appears **twice** on screen (切换造物巡逻模板).
+
+**Rule of thumb**: repeated ids, custom titles, and the `默认/4/5` case labels of a 多分支 all have
+to agree with the image before you trust a coordinate match.
