@@ -1,0 +1,13 @@
+Name six more node types from our own level, with the asset pack as a second witness
+
+Applied: 79 启动定时器, 83 定时器触发时, 252 创建元件, 99 获取实体位置 (pack evidence plus our
+graph structure), and 71 实体创建时 / 633 卡牌选择器完成时 (inferred from graph structure -- the
+event node each of those graphs must start from). Every name was checked to exist in the official
+node catalogue first.
+
+Effect on our own level: unmapped types drop from 12 to 6, and the graphs now read as flows
+instead of ?N soup, e.g. 兵营出兵 is 定时器触发时 -> 创建元件 -> ... -> 获取实体位置 and 选完阵营 is
+卡牌选择器完成时 -> ... -> 设置自定义变量 "阵营".
+
+Still unmapped, and the pack cannot help (618 and 632 appear in no compound at all): 618 (x2),
+249, 250, 632, 128, 169. Those need an editor screenshot.

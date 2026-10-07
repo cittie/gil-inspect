@@ -48,3 +48,27 @@
 
 # Not yet named (candidate 1:1 wrapper, official name unconfirmed):
 # 204	?  (pack calls it "[运算]获得特定整数")
+
+# ---------------------------------------------------------------------------
+# Third batch (2026-10-07): read out of OUR OWN level, using the asset pack as a second
+# witness. Each name was then confirmed to exist in the official node catalogue.
+#
+# Evidence per line:
+#   79 启动定时器        pack: every 时间 compound uses it; our graph 兵营创建 node 1 carries the
+#                        custom title "出兵定时器" (that node's 定时器名称 parameter)
+#   83 定时器触发时      pack: "[时间]自身定时器触发时"; our 兵营出兵 graph opens with it
+#   252 创建元件         pack: all three "spawn an element" compounds use it; our 兵营出兵 node 2
+#                        is exactly where the unit gets created
+#   99 获取实体位置      pack: every position compound uses it; sits right before 创建元件 here
+79	启动定时器
+83	定时器触发时
+252	创建元件
+99	获取实体位置
+
+# Inferred from graph structure rather than from a screenshot (lower confidence, still fits
+# every constraint we can check -- confirm against an editor screenshot before relying on them):
+#   71  实体创建时          the event node in both 兵营创建 and 选阵营; both must start on it
+#   633 卡牌选择器完成时    node 1 of 选完阵营, the only event that graph can start from
+71	实体创建时
+633	卡牌选择器完成时
+
