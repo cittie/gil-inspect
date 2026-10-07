@@ -43,6 +43,10 @@ go vet ./...
 只有在解码新东西时才需要的调试辅助：
 `-graphdump`（图字段的缩进 protobuf 树）· `-pins`（原始引脚描述符）· `-pos`（在 `-graphs` 的节点行末尾附带坐标，做截图比对时用）。
 
+> ⚠️ **覆盖范围**：`-graphdump` / `-pins` 目前只对**关卡图（`.gil`）**有效。
+> 对 `.gia` 资产调用它们会退回普通盘点报告（不产出引脚细节）—— 资产侧只有 `-graphs` 可用。
+> 2026-10-07 实测确认（想从一份第三方 `.gia` 里反解未映射节点时撞到的）。
+
 其它参数：`-nodetypes FILE`（默认 `node-types.txt`）· `-graphfield N`（默认 10）·
 `-keys a,b,c` · `-keyfile FILE` · `-out FILE` · `-snapshot FILE`。
 
