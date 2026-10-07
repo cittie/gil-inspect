@@ -272,13 +272,17 @@ Needed for questions like *"「实体销毁时」 only fires on the level entity
 attached to the level entity?"* (the official FAQ is explicit that the entity-destroy / remove
 events do nothing outside the level entity's graphs).
 
-`tools/probe_graph_ownership.py` (lives in the workspace, not in this repo) checked whether a
-graph id can be followed to its owner:
+一次**一次性探针**（已删除 —— 按"单一实现 / 用完即删"原则，方法与结论保留在这里）检查了
+「图 id 能否追到它的归属实体」：取图字段里每张图的 header id，再数它在**图字段之外**出现的次数。
 
 ```
 graphs found: 5, all reporting header id 10000
 → occurrences of 10000 outside the graph field: 0 (for every graph)
 ```
+
+复现方式（约 30 行脚本即可）：解析容器 offset 20 起的顶层字段 → 取图字段的载荷 →
+逐张图取 `f1 → f1 → f1` 里的第一个 varint 作为 header id → 在全文件里搜索该 id 的 varint 编码，
+排除图字段范围内的命中。
 
 Conclusions:
 
