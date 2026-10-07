@@ -341,3 +341,47 @@ mix pin labels with the **author's own notes**, which is where the learning valu
 `[时间]等待时间/延时` → "确保定时器名称不重复".
 
 ⚠️ Community assets are **another creator's 奇域内容**: study locally, never commit or redistribute.
+
+### 10b. Definitions ↔ implementations pair POSITIONALLY (solved 2026-10-07)
+
+The attribution problem above is solved. A pack's records come in two flavours, distinguished by
+the record-level `f5`:
+
+```
+kind 12   definition      f1{f2:23} f2{f2:5} f3=<display name>   f14 = interface / pin defs
+kind 9    implementation  f1{f2:5}                 (no name)     f13 = the graph body
+```
+
+⚠️ **The id fields are kind markers, not identities**: every definition shares `f1.f2 = 23` and
+`f2.f2 = 5`; every implementation shares `f1.f2 = 5`. So there is nothing to join on — but the
+pack lists **all 87 definitions first, then all 87 implementations**, and the pairing is
+**positional**: definition #N ↔ implementation #N.
+
+Inside an implementation the real nodes look like the level's:
+
+```
+f13 → f1 → f1 → f3 { f2 { f1: 10001, f2: 20000, f3: 22000, f5: 99 },  f3 { … same again … } }
+                                                                     ^^ node type id
+```
+
+**Every node is stored twice** (an `f2`/`f3` duplicate pair), so raw counts must be **halved**.
+
+**Payoff — nine ids named in one pass**, each then confirmed against the official node catalogue in
+the local docs mirror (`research/official-docs/nodes.md`):
+
+| id | official name | how the evidence reads |
+| --- | --- | --- |
+| 3 | 多分支 | pack's `[执行]根据实体类型执行节点` is a single 多分支 — **matches the id already verified from our own level** |
+| 75 | 获取关卡实体 | 1:1 wrapper, name confirmed in the catalogue |
+| 22 | **设置自定义变量** | 1:1 wrapper; and our own level's 选阵营 graph shows `设置自定义变量 "阵营"` |
+| 50 | **获取自定义变量** | 1:1 wrapper |
+| 310 | 获取全局计时器当前时间 | 1:1 wrapper (pack calls it "[时间]获取关卡计时器时间") |
+| 10 / 11 / 12 | 加法运算 / 减法运算 / 乘法运算 | each is 3 copies of one primitive inside a "[矩阵]" wrapper |
+| 226 / 227 | 逻辑与运算 / 逻辑或运算 | each is 3 copies inside "[运算]多次与运算 / 多次或运算" |
+
+**Method rule worth keeping**: a compound whose graph is a **single node** is a 1:1 wrapper, so its
+name *is* the primitive's name (verify it in the official catalogue). A compound that repeats one
+primitive N times is the author's own loop — its name describes *intent*, and the id is the
+primitive, **not** the compound name. Getting this wrong is how a table fills with plausible junk.
+
+Remaining work list: the 12 ids still unmapped in our own level, plus the wider union from the pack.

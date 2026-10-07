@@ -18,3 +18,33 @@
 3	多分支
 656	设置阵营结算成功状态
 77	结算关卡
+
+# ---------------------------------------------------------------------------
+# Second batch (2026-10-07): derived from a community compound-node pack (.gia).
+#
+# Method: an asset pack stores 87 compound-node DEFINITIONS (kind marker 12, carrying the
+# display name) followed by 87 IMPLEMENTATIONS (kind marker 9, carrying the graph). The id
+# fields are kind markers, not identities, so the pairing is POSITIONAL:
+# definition #N <-> implementation #N. Each node is stored twice (an f2/f3 duplicate pair),
+# so raw counts must be halved.
+#
+# A compound whose graph is a SINGLE node is a 1:1 wrapper, so its name identifies the
+# primitive -- and each name below was then confirmed against the official node catalogue
+# in our local docs mirror. `3 多分支` is the strongest evidence of all: it was already
+# verified from our own level, and the pack's "[执行]根据实体类型执行节点" independently
+# resolves to the same id.
+#
+# 1:1 wrappers (single node in the graph):
+75	获取关卡实体
+22	设置自定义变量
+50	获取自定义变量
+310	获取全局计时器当前时间
+# N copies of a single primitive (the compound is a loop/aggregation the author wrote):
+10	加法运算
+11	减法运算
+12	乘法运算
+226	逻辑与运算
+227	逻辑或运算
+
+# Not yet named (candidate 1:1 wrapper, official name unconfirmed):
+# 204	?  (pack calls it "[运算]获得特定整数")
