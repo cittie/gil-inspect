@@ -41,7 +41,7 @@ go vet ./...
 | `gil-inspect -scan DIR` | 标准输出 | 一个**目录**的导出：逐文件汇总 + **节点/变量类型 id 并集**（标定工作清单） |
 
 只有在解码新东西时才需要的调试辅助：
-`-graphdump`（图字段的缩进 protobuf 树）· `-pins`（原始引脚描述符）。
+`-graphdump`（图字段的缩进 protobuf 树）· `-pins`（原始引脚描述符）· `-pos`（在 `-graphs` 的节点行末尾附带坐标，做截图比对时用）。
 
 其它参数：`-nodetypes FILE`（默认 `node-types.txt`）· `-graphfield N`（默认 10）·
 `-keys a,b,c` · `-keyfile FILE` · `-out FILE` · `-snapshot FILE`。

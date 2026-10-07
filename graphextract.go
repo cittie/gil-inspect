@@ -107,6 +107,7 @@ type gGraph struct {
 	Name  string
 	Nodes []gNode
 	Links [][2]int // 节点索引之间的**无向**连线
+	Notes []string // 资产：定义记录里的引脚名与作者注释（关卡为空）
 }
 
 // pinRefs 从一个引脚描述符里取出**候选的节点索引引用**。
@@ -321,21 +322,32 @@ func loadNodeTypes(path string) map[uint64]string {
 // renderGraphs 生成纯文本中间文件（全程不用 JSON）。
 //
 // 刻意保持最小：节点 id + 解析出的名字 + 可选自定义标题 + 引用，然后是连线。
-// **位置被略去** —— 一旦改成竖向流程而不是画布，坐标就是噪声。
-func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) string {
+// 坐标默认略去（改成竖向流程后通常是噪声）；需要做截图比对时用 -pos 打开。
+func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string, withPos bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# node graphs - %s\n\n", srcName)
 	fmt.Fprintf(&b, "graphs: %d\n", len(graphs))
 	freq := map[uint64]int{}
+	// 每个未映射类型：把用到它的图按"图内节点数"从少到多记下来 —— 图越小，
+	// 图名越能定位这个原始节点是什么（标定时最有用的线索）。
+	useByType := map[uint64][]string{}
 	for _, g := range graphs {
 		fmt.Fprintf(&b, "\n## %s\n\n", g.Name)
 		b.WriteString("nodes:\n")
+		seenInGraph := map[uint64]bool{}
 		for _, n := range g.Nodes {
 			name := typeLabelFor(n.TypeID, types)
 			freq[n.TypeID]++
+			if types[n.TypeID] == "" && !seenInGraph[n.TypeID] {
+				seenInGraph[n.TypeID] = true
+				useByType[n.TypeID] = append(useByType[n.TypeID], fmt.Sprintf("%s(%d)", g.Name, len(g.Nodes)))
+			}
 			line := fmt.Sprintf("  %d\t%s", n.Index, name)
 			if n.Title != "" {
 				line += "\t\"" + n.Title + "\""
+			}
+			if withPos && n.HasPos {
+				line += fmt.Sprintf("\t@%.0f,%.0f", n.X, n.Y)
 			}
 			kept := []string{}
 			for _, r := range uniqStrings(n.Texts) {
@@ -347,6 +359,20 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 				line += "\trefs: " + strings.Join(kept, ",")
 			}
 			b.WriteString(line + "\n")
+		}
+		if len(g.Notes) > 0 {
+			// 资产：定义记录里的引脚名与作者注释
+			b.WriteString("notes:\n")
+			shown := g.Notes
+			if len(shown) > 12 {
+				shown = shown[:12]
+			}
+			for _, note := range shown {
+				b.WriteString("  - " + note + "\n")
+			}
+			if len(g.Notes) > len(shown) {
+				fmt.Fprintf(&b, "  - …另有 %d 条\n", len(g.Notes)-len(shown))
+			}
 		}
 		b.WriteString("links:\n")
 		b.WriteString("  # EXPERIMENTAL - not verified against a known graph, do not trust yet\n")
@@ -373,8 +399,18 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 		b.WriteString("none - every type id resolved\n")
 	} else {
 		b.WriteString("add these to node-types.txt as \"id<TAB>name\":\n\n")
+		b.WriteString("（每条附上用到它的图，按**图内节点数从少到多**排序 —— 图越小，图名越能定位这个原始节点）\n\n")
 		for _, id := range unknown {
-			fmt.Fprintf(&b, "- %d   (used %d×)\n", id, freq[id])
+			uses := useByType[id]
+			shown := uses
+			if len(shown) > 4 {
+				shown = shown[:4]
+			}
+			extra := ""
+			if len(uses) > len(shown) {
+				extra = fmt.Sprintf(" 等 %d 张", len(uses))
+			}
+			fmt.Fprintf(&b, "- %d   (used %d×)   %s%s\n", id, freq[id], strings.Join(shown, "、"), extra)
 		}
 	}
 	return b.String()

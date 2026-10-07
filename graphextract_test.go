@@ -139,7 +139,7 @@ func TestExtractGraphs(t *testing.T) {
 func TestRenderGraphsMarksLinksExperimental(t *testing.T) {
 	graphs := extractGraphs(buildGraphPayload("G", 1, 2, 0, 0))
 	types := map[uint64]string{2: "双分支"}
-	out := renderGraphs("x.gil", graphs, types)
+	out := renderGraphs("x.gil", graphs, types, false)
 	for _, want := range []string{"## G", "双分支", "EXPERIMENTAL"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("report is missing %q\n%s", want, out)

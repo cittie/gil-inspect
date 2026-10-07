@@ -44,7 +44,8 @@ down in [docs/node-graph-extraction.md](docs/node-graph-extraction.md).
 ```
 gil-inspect -path <file.gil> [flags]
 
-  -graphs          write <name>.graphs.md  - the plain-text intermediate file
+  -graphs          write <name>.graphs.md  - the plain-text intermediate file (`.gil` and `.gia`)
+  -pos             append each node's stored coordinates to the -graphs output
   -lint            write <name>.lint.md    - routine sanity checks (see below)
   -scan DIR        walk a folder of exports (.gil) and asset files (.gia): summary + type-id unions
   -nodetypes FILE  type lookup table (default node-types.txt)

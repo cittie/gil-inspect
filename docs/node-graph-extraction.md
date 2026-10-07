@@ -334,11 +334,11 @@ appear in that pack (2 双分支 ×42, 14 是否相等 ×14, 180 数据类型转
 level's shape, so "which primitive node types does this compound use" cannot be answered yet —
 which is exactly what would turn asset names into `id → name` mappings automatically.
 
-**What does work today**: `tools/probe_gia_nodes.py --catalog OUT.md` (in the workspace) writes one
-section per named record — name, pin names, and the text strings inside the record. Those strings
-mix pin labels with the **author's own notes**, which is where the learning value sits, e.g.
-`[变量]更新时间` → "需要在关卡实体挂载全局计时器Update" (a usage prerequisite),
-`[时间]等待时间/延时` → "确保定时器名称不重复".
+**现在由 Go 工具直接输出**：`gil-inspect -path X.gia -graphs` 会在每个复合节点的图后面附一段
+`notes:` —— 即该复合节点**定义记录里的引脚名与作者注释**。这些文本混合了引脚标签与
+**作者自己的说明**，而学习价值就在后者，例如
+`[变量]更新时间` → "需要在关卡实体挂载全局计时器Update"（一条使用前提）、
+`[时间]等待时间/延时` → "确保定时器名称不重复"。
 
 ⚠️ Community assets are **another creator's 奇域内容**: study locally, never commit or redistribute.
 
@@ -401,9 +401,8 @@ stored ≈ image_pixel − offset        (offset derived from two already-known 
 
 Worked example — naming the last two ids of our `兵营出兵` graph:
 
-1. `tools/probe_node_positions.py <file.gil> --graph 兵营出兵` printed the ten nodes with their
-   coordinates. Two of them were already known, and in the image their on-screen positions differ
-   by the same delta as their stored coordinates → offset ≈ (1234, 599), scale 1:1.
+1. `gil-inspect -path X.gil -graphs -pos`（`-pos` 会在每个节点行末尾附带坐标）打出那十个节点
+   的坐标。其中两个已知，而它们在截图上的相对位移与存储坐标的相对位移一致 → 偏移 ≈ (1234, 599)，比例 1:1。
 2. The other eight known nodes then landed within **~40 px** of prediction, which is what makes the
    model trustworthy rather than fitted.
 3. The two remaining candidates, stored at `(38, −192)` and `(−334, 124)`, predicted the on-screen
@@ -448,5 +447,25 @@ to agree with the image before you trust a coordinate match.
 | 323 | 设置节点图变量 | `更新时间` / `节点图变量自增·自减` 共 10 处 |
 | 69 | 销毁实体 | `角色碰撞死亡` 与 `销毁指定元件的所有实体 ×3` 的交集 |
 
-**方法沉淀**：图**越小**，复合节点的名字越能定位它用的原始节点；同一 id 在多张图里出现时，
-取"这些图都需要什么"的**交集**。引脚名与作者注释（记录内文本）是主要线索来源。
+**方法沉淀**：图**越小**，复合节点的名字越能定位它用的原始节点；同一 id 在多张图里出现时，取"这些图都需要什么"的**交集**。引脚名与作者注释（记录内文本）是主要线索来源。
+
+## 12. 单一实现原则：能力只留在 Go 工具里（2026-10-07）
+
+解码过程中曾在工作区写了一批评测脚本（Python）用于探索。当同一能力被搬进 Go 工具后，
+**不再保留 Python 版本** —— 同一条逻辑两处实现，迟早会漂移，而且改一处忘一处很难发现。
+
+已删除的脚本与它们在 Go 里的**对应能力**：
+
+| 原 Python 脚本 | 现在用 Go 工具 |
+| --- | --- |
+| `probe_gia_pairing.py`（定义↔实现配对） | 资产解码（`giagraphs.go`） |
+| `render_gia_graphs.py`（资产图渲染） | `gil-inspect -path X.gia -graphs` |
+| `probe_gia_nodes.py --catalog`（资产目录） | 同上，每个图后附 `notes:`（引脚名 + 作者注释） |
+| `probe_gia_graph_detail.py` / `probe_gia_group_f4.py`（字段明细、f4 连线） | 同一解码路径 |
+| `probe_node_positions.py`（坐标） | `-graphs -pos` |
+| `probe_variable_types.py`（变量声明枚举） | `-lint` 里的「已声明的自定义变量」表 |
+| `identify_types.py` / `identify_asset_types.py`（id → 哪些图用到） | `-graphs` 末尾的「types needing a mapping」现在**每条都附上用到它的图**，按图内节点数从少到多排序 —— 这正是标定时最需要的线索 |
+
+工作区里仍保留的 Python 都与本工具无关（文档镜像刷新、PAC 解析），或是一次性的仓库维护脚本。
+
+**保留一条判据**：新能力**先在 Go 里实现**；探索期的临时脚本用完即删，不要留在工作区。

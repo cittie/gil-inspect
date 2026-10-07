@@ -50,6 +50,7 @@ func main() {
 	graphs := flag.Bool("graphs", false, "write the node graphs as a plain-text/markdown intermediate file")
 	pins := flag.Bool("pins", false, "debug: print every pin descriptor in raw form (calibration aid)")
 	lint := flag.Bool("lint", false, "write <name>.lint.md - routine sanity checks (dangling references, naming, graph size, variable types)")
+	pos := flag.Bool("pos", false, "在节点行末尾附带坐标（截图比对 / 标定时用）")
 	scan := flag.String("scan", "", "walk a .gil file or a directory of them: summary table + type-id unions")
 	nodeTypes := flag.String("nodetypes", "node-types.txt", "id<TAB>name lookup table for node types")
 	graphField := flag.Int("graphfield", 10, "container field number that holds node graphs")
@@ -141,7 +142,7 @@ func main() {
 			if isAssetContainer(raw) {
 				kind = "资产复合节点图"
 			}
-			report := renderGraphs(filepath.Base(*path), gs, table)
+			report := renderGraphs(filepath.Base(*path), gs, table, *pos)
 			if err := os.WriteFile(outPath, []byte(report), 0o644); err != nil {
 				fmt.Fprintln(os.Stderr, "cannot write graphs file:", err)
 			} else {

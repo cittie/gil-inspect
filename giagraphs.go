@@ -160,6 +160,7 @@ func extractAssetGraphs(raw []byte) []gGraph {
 	}
 
 	var names []string
+	var defRecords [][]byte
 	var impls [][]byte
 	for _, f := range top {
 		if f.Wire != 2 {
@@ -181,6 +182,7 @@ func extractAssetGraphs(raw []byte) []gGraph {
 		switch {
 		case kind == assetRecordDefinition && name != "":
 			names = append(names, name)
+			defRecords = append(defRecords, f.Bytes)
 		case kind == assetRecordImplementation:
 			impls = append(impls, f.Bytes)
 		}
@@ -196,6 +198,14 @@ func extractAssetGraphs(raw []byte) []gGraph {
 			continue
 		}
 		cur := readAssetGraph(name, body)
+		// 定义记录里带着复合节点的**引脚名与作者注释**（实测），这是学习资产时最有用的部分
+		notes := []string{}
+		for _, t := range textsOf(defRecords[i]) {
+			if t != name && len(t) > 1 {
+				notes = append(notes, t)
+			}
+		}
+		cur.Notes = uniqStrings(notes)
 		if len(cur.Nodes) > 0 {
 			graphs = append(graphs, cur)
 		}

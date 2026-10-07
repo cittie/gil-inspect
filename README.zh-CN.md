@@ -41,7 +41,8 @@ gil-inspect -path export/MyLevel.gil -graphs
 ```
 gil-inspect -path <存档.gil> [参数]
 
-  -graphs          输出 <名字>.graphs.md —— 纯文本中间文件
+  -graphs          输出 <名字>.graphs.md —— 纯文本中间文件（`.gil` 与 `.gia` 都支持）
+  -pos             在 -graphs 输出的节点行末尾附带存档坐标
   -lint            输出 <名字>.lint.md —— 常规检查（见下）
   -scan 目录       批量扫描目录下的关卡存档（.gil）与资产文件（.gia）：汇总表 + 类型 id 并集
   -nodetypes FILE  节点类型映射表（默认 node-types.txt）
