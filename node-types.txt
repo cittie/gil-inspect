@@ -100,5 +100,25 @@
 632	唤起卡牌选择器
 169	拼装列表
 
+# ---------------------------------------------------------------------------
+# Sixth batch (2026-10-07): the last unmapped id in our own level, from a screenshot of 选完阵营.
+# The prediction made before the screenshot ("a list-index node, since it feeds the 阵营 write and
+# the pack only uses it for index-into-list compounds") turned out correct.
+#
+# That screenshot also makes the whole graph readable, which is what the tool is for:
+#
+#   [卡牌选择器完成时] (目标玩家 / 选择结果列表 / 完成原因 / 卡牌选择器索引)
+#      ├─ 是否相等(卡牌选择器索引, 1073741847) → 双分支
+#      │      是 → 设置自定义变量(目标实体=目标玩家, 变量名="阵营", 变量值=…, 是否触发事件=否)
+#      │      否 → unconnected
+#      └─ 获取列表对应值(列表=选择结果列表, 序号=0) → 值 → 设置自定义变量.变量值
+#
+# NOTE the logic gap this exposes: 完成原因 is NOT wired to anything, so a timeout / closed
+# selector still assigns 阵营 from 选择结果列表[0] -- and per the official docs that list can be
+# EMPTY when the player closes the selector without choosing. Worth checking 完成原因 (or at least
+# the list's length) before writing.
+128	获取列表对应值
+
+
 
 

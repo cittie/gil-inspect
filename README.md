@@ -28,7 +28,7 @@ gil-inspect -path export/MyLevel.gil -graphs
 | keyword checklist (which of your identifiers are present, and how often) | ✅ works |
 | CJK strings / ASCII identifiers | ✅ works |
 | **node graphs**: graph names, node list, **node type ids**, positions, custom titles, referenced variable names | ✅ works |
-| node type **names** | ✅ 9 ids are verified against a real graph and **built in**; the rest need a `node-types.txt` lookup table (not bundled) |
+| node type **names** | ✅ **30 ids** mapped: 9 verified against a real graph and built in, 21 more in the shipped `node-types.txt`; every name cross-checked against the official node catalogue. Our own level now reports **0 unmapped types** |
 | graph **wiring** (which pin feeds which) | ⚠️ **experimental, not trustworthy** — see below |
 
 ### Wiring is explicitly not claimed

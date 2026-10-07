@@ -1,0 +1,19 @@
+Map the last node type: our own level is now 100% readable
+
+128 = 获取列表对应值, read off a screenshot of 选完阵营. The prediction made before the screenshot
+held: the pack only uses 128 in compounds that index into a list, and in our graph it takes element
+0 of the selection-result list.
+
+With that, our level reports 0 unmapped types (5 graphs / 33 nodes) and every graph reads as a
+flow, e.g. 兵营出兵 is 定时器触发时 -> 创建元件 -> 开关巡逻模板, and 选完阵营 is
+卡牌选择器完成时 -> 获取列表对应值 -> 是否相等 -> 双分支 -> 设置自定义变量 "阵营".
+30 mappings total (9 built in, 21 in node-types.txt).
+
+The screenshot also exposed a logic gap worth acting on, recorded in node-types.txt and to be
+raised with the user: 完成原因 is not wired to anything, so a timeout or a selector closed without
+choosing still writes 阵营 from 选择结果列表[0] -- and the official docs say that list is EMPTY when
+the selector is closed without a choice. Checking 完成原因 (or at least the list length) before the
+write would close it. This is the first time the readable graph has paid for itself as a review
+tool rather than a decoder.
+
+Both READMEs updated: the status table still claimed nine names and a table "not bundled".
