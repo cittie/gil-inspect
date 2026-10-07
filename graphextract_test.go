@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// --- tiny protobuf encoders, so tests do not need a real .gil file ---
+// --- 极简 protobuf 编码器，让测试不必依赖真实 .gil 文件 ---
 
 func encVarint(v uint64) []byte {
 	out := []byte{}
@@ -81,7 +81,7 @@ func TestParseMessage(t *testing.T) {
 }
 
 func TestParseMessageRejectsGarbage(t *testing.T) {
-	// a length prefix that runs past the end must not be accepted
+	// 长度前缀越界的消息不能被接受
 	if _, ok := parseMessage([]byte{0x12, 0x7f, 0x01}); ok {
 		t.Error("parseMessage accepted a message whose payload runs past the end")
 	}
@@ -96,8 +96,8 @@ func TestIsTexty(t *testing.T) {
 	}
 }
 
-// buildGraphPayload mirrors the observed container layout:
-// f1 wrapper -> f1 body -> {f1 header, f2 name, f3 node entry}
+// buildGraphPayload 复刻实测到的容器布局：
+// f1 包装 -> f1 图体 -> {f1 头部, f2 图名, f3 节点条目}
 func buildGraphPayload(name string, index int, typeID uint64, x, y float32) []byte {
 	header := append(encVarintField(1, 10000), encVarintField(2, 20000)...)
 	rec := append(encVarintField(1, 10001), encVarintField(2, 20000)...)

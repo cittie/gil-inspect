@@ -1,107 +1,97 @@
-# gil-inspect — agent guide
+# gil-inspect —— 给 AI 助手的使用说明
 
-**If you are an AI assistant that was handed this repository URL, read this file first.** It is
-the shortest path from "here is a link" to "I can build the tool, run the right command, and
-interpret the output without over-claiming".
+**如果你是一个刚拿到本仓库地址的 AI 助手：先读这个文件。** 它是从"一个链接"到"能正确构建、
+跑对命令、并且不过度解读输出"的最短路径。
 
-Human-facing docs: [`README.md`](README.md) (English) · [`README.zh-CN.md`](README.zh-CN.md) (中文).
+面向人的文档：[`README.md`](README.md)（英文）· [`README.zh-CN.md`](README.zh-CN.md)（中文）。
 
 ---
 
-## 1. What this is
+## 0. 语言约定（2026-10-07 起）
 
-A **read-only** inspector for `.gil` files — the level exports produced by the official
-*export save* feature of the Genshin Impact UGC editor (Miliastra Wonderland / 千星沙箱).
+- **代码注释、文档、提交信息一律用中文** —— 这个工具主要不是给人读的，AI 读中文没有障碍，
+  而中文注释让创作者（仓库所有者）**复查逻辑更方便**。
+- **例外：两份 README 必须保持双语同步**（`README.md` 英文 + `README.zh-CN.md` 中文，
+  **同一次提交一起改**），因为它们是面向公众的门面。
+- 新增探针 / 脚本同样用中文注释与中文输出。
 
-Typical use: you built a level, exported it, and want to know **what is actually inside the file**
-— which elements, custom variables and node graphs exist, what changed since the last export, and
-whether anything looks inconsistent — **without opening the editor**.
+## 1. 这是什么
 
-## 2. Build (no dependencies, Go 1.27+)
+一个**只读**的 `.gil` 文件检查工具 —— `.gil` 是《原神》UGC 编辑器（千星沙箱 / Miliastra
+Wonderland）官方「导出存档」功能产出的关卡存档。
+
+典型用法：你搭好了关卡并导出，想在不打开编辑器的情况下搞清**文件里到底有什么** ——
+有哪些元件、自定义变量、节点图，与上一次导出相比改了什么，以及有没有看着不一致的地方。
+
+## 2. 构建（无依赖，Go 1.27+）
 
 ```
-go build ./...          # or: go build -o gil-inspect ./...
-go test ./...           # 20 tests
+go build ./...          # 或：go build -o gil-inspect ./...
+go test ./...           # 全部测试通过
 go vet ./...
 ```
 
-## 3. The four commands (this is the whole interface)
+## 3. 四个命令（这就是全部接口）
 
-| command | writes | use it when |
+| 命令 | 产出 | 什么时候用 |
 | --- | --- | --- |
-| `gil-inspect -path X.gil` | `X.inspect.md`, `gil-snapshot.json` | inventory: container header, top-level field map, keyword hits, **diff vs the previous export** |
-| `gil-inspect -path X.gil -graphs` | `X.graphs.md` | you want the node graphs as **plain markdown** (graph names, node list, type ids/names, custom titles, referenced variable names) |
-| `gil-inspect -path X.gil -lint` | `X.lint.md` | routine checks: dangling references, naming, graph size, **custom-variable types**, declared-variable inventory |
-| `gil-inspect -scan DIR` | stdout | a **folder** of exports: per-file summary + the **union of node/variable type ids** (calibration work list) |
+| `gil-inspect -path X.gil` | `X.inspect.md`、`gil-snapshot.json` | 盘点：容器头、顶层字段表、关键词命中、**与上次导出的差异** |
+| `gil-inspect -path X.gil -graphs` | `X.graphs.md` | 想要**纯 Markdown** 的节点图（图名、节点列表、类型 id/名字、自定义标题、引用到的变量名） |
+| `gil-inspect -path X.gil -lint` | `X.lint.md` | 常规检查：悬空引用、命名、图规模、**自定义变量类型**、已声明变量清单 |
+| `gil-inspect -scan DIR` | 标准输出 | 一个**目录**的导出：逐文件汇总 + **节点/变量类型 id 并集**（标定工作清单） |
 
-Debug aids, only needed when decoding something new:
-`-graphdump` (indented protobuf tree of the graph field) · `-pins` (raw pin descriptors).
+只有在解码新东西时才需要的调试辅助：
+`-graphdump`（图字段的缩进 protobuf 树）· `-pins`（原始引脚描述符）。
 
-Other flags: `-nodetypes FILE` (default `node-types.txt`) · `-graphfield N` (default 10) ·
-`-keys a,b,c` · `-keyfile FILE` · `-out FILE` · `-snapshot FILE`.
+其它参数：`-nodetypes FILE`（默认 `node-types.txt`）· `-graphfield N`（默认 10）·
+`-keys a,b,c` · `-keyfile FILE` · `-out FILE` · `-snapshot FILE`。
 
-## 4. How to interpret the output
+## 4. 输出怎么读
 
 **`X.inspect.md`**
-- `f<N>` rows are top-level container fields. Observed meaning: `f4` element/template library,
-  `f5` entity placement, `f8` element definitions, **`f10` node graphs**, `f15` inventory.
-- The "size changes vs snapshot" section is how you answer *"what did this export change?"* —
-  compare field sizes against the previous `gil-snapshot.json`.
-- The field walk may stop a few bytes before EOF; that is **normal**, not corruption.
+- `f<N>` 行是顶层容器字段。实测含义：`f4` 元件/模板库、`f5` 实体布设、`f8` 元件定义、
+  **`f10` 节点图**、`f15` 背包。
+- 「size changes vs snapshot」一节用来回答*"这次导出改了什么？"* —— 拿字段尺寸与上一次的
+  `gil-snapshot.json` 对比。
+- 字段走查可能在文件结尾前几字节停下，这是**正常的**，不是文件损坏。
 
 **`X.graphs.md`**
-- `nodes:` lines are `index<TAB>name<TAB>"custom title"<TAB>refs: …`.
-- `?N` means the node type id is not mapped yet → add `N<TAB>name` to `node-types.txt`.
-- **`links:` is EXPERIMENTAL.** It does not reproduce real wiring (measured: 2 of 14 known edges).
-  Do **not** draw a flow diagram from it and present it as the graph's logic.
+- `nodes:` 行格式为 `索引<TAB>名字<TAB>"自定义标题"<TAB>refs: …`。
+- `?N` 表示该节点类型 id 还没映射 → 往 `node-types.txt` 加一行 `N<TAB>名字`。
+- **`links:` 是实验性的**，还原不出真实连线（实测：14 条已知边只对上 2 条）。
+  **不要**据它画流程图并当成图逻辑。
 
 **`X.lint.md`**
-- Findings are **things to verify, not verdicts** — the container lacks the context to be certain.
-- `error` (❌) = a real inconsistency (e.g. one variable name declared with two different types).
-- `warn` (⚠️) = likely mistake (e.g. a variable named `*_unit` declared as 整数).
-- `info` (ℹ️) = inventory / not-yet-mapped ids.
-- The report ends with a **declared-variable table** (name / type / declaration sites / default).
-- The report states its boundary against the editor's own checks; repeated here because it matters:
-  the platform has **试玩校验** (blocking) and **风险检查** (non-blocking, data-level). **Whatever
-  they report is authoritative.** Verified blind spot we do cover: **a custom variable declared
-  with the wrong type is NOT reported there** — the mechanism just silently does nothing.
+- 每条结论都是**待核对项，不是判定** —— 容器里缺少确证所需的上下文。
+- `error`（❌）= 真实的不一致（例如同一个变量名被声明成了两种类型）。
+- `warn`（⚠️）= 很可能写错了（例如名字叫 `*_unit` 的变量被声明成整数）。
+- `info`（ℹ️）= 盘点信息 / 尚未映射的 id。
+- 报告末尾附**已声明变量表**（名字 / 类型 / 声明处数量 / 默认值）。
+- 报告里写明了它与编辑器自带检查的边界，这里再强调一次：平台有【**试玩校验**】（阻断性）与
+  【**风险检查**】（非阻断、多是数据错误），**官方能查出来的一律以官方为准**。
+  我们**已实测确认的盲区**是：**自定义变量类型写错，官方风险检查不报** —— 机制只是静默不生效。
 
-## 5. Limits — do not promise these
+## 5. 做不到什么（不要承诺这些）
 
-| not available | why |
+| 做不到 | 原因 |
 | --- | --- |
-| **graph wiring** (which pin feeds which) | not decoded yet; `links:` is experimental |
-| **which entity a graph is attached to** | graph ids are scoped locally and never referenced elsewhere in the file (probe result recorded in `docs/node-graph-extraction.md`). So "this graph must be on the level entity" can only be a **reminder**, never a verification |
-| **most node type names** | only the verified ids are built in (9 today); everything else needs `node-types.txt` |
-| **node parameters** | only partially decoded (some default values) |
-| compound-node internals | not decoded |
+| **图连线**（哪个引脚喂给哪个） | 还没解出来；`links:` 是实验性的 |
+| **图挂在哪个实体上** | 图 id 是局部作用域，文件里别处从未引用（探针结论记在 `docs/node-graph-extraction.md`）。所以"这张图必须挂在关卡实体上"只能是**提醒**，永远不是验证 |
+| **大多数节点类型名字** | 目前共映射 **30 个 id**：9 个内置（用真实节点图验证）+ 21 个在 `node-types.txt`；其余仍是 `?N` |
+| **节点参数** | 只解出一部分（某些默认值） |
+| **复合节点内部** | 未解码 |
 
-## 6. Conventions you must keep
+## 6. 必须守住的约定
 
-- **Read-only, always.** Never write, patch or re-encode the input. Do not turn this into a writer:
-  publishing a tool that modifies level data is itself a prohibited act under the game's creator
-  rules (see the compliance section in the READMEs).
-- **Never commit `.gil` files or third-party tables.** `.gitignore` excludes `*.gil`; only derived
-  `id<TAB>name` lines belong in the repository.
-- **Bilingual docs:** `README.md` and `README.zh-CN.md` are one artefact — change both together.
+- **始终只读。** 绝不写入、修改或重新编码输入文件。也不要把它改成写入器：按游戏创作规则，
+  **发布**一个能修改关卡数据的工具，**发布行为本身就违规**（理由见两份 README 的合规段落）。
+- **绝不提交 `.gil` 文件或第三方映射表。** `.gitignore` 已挡 `*.gil` / `*.gia`；
+  仓库里只放**我们自己推导**的 `id<TAB>名字` 行。
+- **两份 README 是一个整体**：`README.md` 与 `README.zh-CN.md` 必须同一次提交一起改。
+- **其余一律中文**（见 §0）。
 
-## 7. Where to read next
+## 7. 接下来读哪
 
-- `docs/node-graph-extraction.md` — measured field layout, what is decoded, the ground-truth edge
-  table a future wiring decoder must reproduce, and the plan for growing `node-types.txt` from
-  official tutorial levels.
-- When a check here turns out to duplicate one of the editor's own checks, **delete it** rather
-  than maintain it twice.
-
----
-
-## 中文摘要
-
-这是**只读**的 `.gil` 关卡导出检查工具。拿到本仓库地址后：
-
-1. `go build ./...` 构建（无依赖，Go 1.27+）
-2. 四个命令覆盖全部用法：`-path`（盘点+与上次导出对比）｜`-graphs`（节点图纯文本）｜`-lint`（常规检查，含**变量类型**）｜`-scan 目录`（批量 + 类型 id 并集）
-3. **`links:` 是实验性的**，还原不出真实连线，**不要**据此画流程图并当成图逻辑
-4. **图的挂载主体读不出来** → 「实体销毁事件必须挂关卡实体」这类问题只能**提醒**，无法确证
-5. 工具**不替代**编辑器自带的【试玩校验】与【风险检查】；**已验证的盲区**是「自定义变量类型写错」（官方不报）
-6. 保持**只读**、**不提交 `.gil` 与第三方表**、**两份 README 一起改**
+- `docs/node-graph-extraction.md` —— 实测的字段布局、已解码的部分、未来的连线解码器**必须复现**
+  的真实连线对照表、以及如何用官方教程关卡与资产包把 `node-types.txt` 长大。
+- 如果发现某条检查与编辑器自带检查重复，**删掉它**，而不是两头维护。

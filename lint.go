@@ -1,14 +1,11 @@
-// Routine sanity checks over one export ("lint").
+// 对单个导出做常规检查（"lint"）。
 //
-// Scope is deliberately limited to what this tool can actually see, and every finding is
-// phrased as something to verify rather than a verdict -- the .gil does not carry enough
-// context to be certain (an identifier that appears only inside graphs may legitimately be a
-// graph name, a node's custom title, or a timer name).
+// 范围**刻意限制在本工具真正看得见的东西上**，而且每条结论都写成"待核对项"而不是判定 ——
+// `.gil` 里没有足够上下文来确证（只出现在节点图里的标识符，完全可能是图名、节点自定义标题或定时器名）。
 //
-// The load-bearing signal is simple and measurable: for each identifier that appears in the
-// node-graph section, how often does it also appear *elsewhere* in the file (element/entity/
-// level definitions)? A variable that graphs use but nothing declares shows up as
-// "graphs > 0, elsewhere == 0" -- exactly the dangling-reference case.
+// 核心判据简单且可度量：对每个出现在节点图区里的标识符，它在文件**其它部分**（元件 / 实体 /
+// 关卡定义）出现多少次？图里用了、但没有任何地方声明的变量，就会表现为
+// "图里 > 0，别处 == 0" —— 正是"悬空引用"那一种情况。
 package main
 
 import (
@@ -17,21 +14,21 @@ import (
 	"strings"
 )
 
-// Finding is one lint result. Level is "error", "warn" or "info".
+// Finding 是一条检查结果。Level 取 "error" / "warn" / "info"。
 type Finding struct {
 	Level string
 	Code  string
 	What  string
 }
 
-// identifiers that are structural noise rather than user-chosen names
+// 这些是结构性噪声（骨骼挂点 / 资源名前缀），不是用户起的名字
 var lintNoisePrefixes = []string{
 	"GI_", "PRIVATE_", "Beyd_", "Fx_", "MPAction", "Root", "root", "FocusAnchor",
 	"MoveHead", "Foot", "Hand", "Weapon", "Chest", "Head", "Neck", "Body", "Waist", "Knee",
 	"Billboard", "RUNE", "Bone", "Attach",
 }
 
-// names our own design convention forbids (they read as "one side is the player")
+// 我们自己的命名约定禁止的名字（读起来像"一方就是玩家"）
 var lintBannedNames = []string{"self", "enemy", "my_", "our_", "ally_", "opponent"}
 
 func isNoise(id string) bool {
@@ -57,15 +54,15 @@ func lintExport(raw []byte, graphField int) []Finding {
 		findings = append(findings, Finding{Level: level, Code: code, What: what})
 	}
 
-	// A missing graph field must not abort the checks that do not depend on graphs
-	// (variable declarations are checked even in a level that has no graphs at all).
+	// 缺少图字段**不能**中断与图无关的检查
+	// （完全没有节点图的关卡，也要照常检查变量声明）。
 	graphPayload, hasGraphs := fieldPayload(raw, graphField)
 	if !hasGraphs {
 		add("error", "parse-graph-field", fmt.Sprintf("容器字段 f%d 找不到或不是长度分隔字段：无法检查节点图（变量检查仍会执行）", graphField))
 	}
 	if _, walkErr := parseFields(raw, 20); walkErr != "" {
-		// Observed exports end with a few bytes that are not a valid field (e.g. "stopped at
-		// offset 85264" on an 85267-byte file). Only treat an early stop as suspicious.
+		// 实测导出文件末尾本来就有几个字节不是合法字段（例如 85267 字节的文件"stopped at
+		// offset 85264"）。只有**提前很多**停下才算可疑。
 		if stop := trailingOffset(walkErr); stop < 0 || stop < len(raw)-16 {
 			add("warn", "parse-health", "顶层字段走查提前结束："+walkErr+"（文件可能被截断，或格式已变）")
 		}
@@ -79,7 +76,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 		graphs = extractGraphs(graphPayload)
 	}
 
-	// --- candidate identifiers that graphs reference ---
+	// --- 候选标识符：节点图里引用到的 ---
 	graphIDs := uniqSorted(matches(idRe, graphText))
 	graphCJK := uniqSorted(matches(cjkRe, graphText))
 
@@ -90,9 +87,9 @@ func lintExport(raw []byte, graphField int) []Finding {
 		}
 	}
 
-	// ASCII identifiers: used in graphs but nowhere else.
-	// Short alphanumeric runs (rCB, CD5, KD5, ND5 ...) are internal ids, not user-chosen names,
-	// so a length floor removes the noise without hiding real variable names.
+	// ASCII 标识符：只在图里出现、别处没有。
+	// 短的字母数字串（rCB、CD5、KD5、ND5 …）是内部 id，不是用户起的名字，
+	// 所以设一个长度下限来去噪，同时不会把真正的变量名藏掉。
 	for _, id := range graphIDs {
 		if isNoise(id) || len(id) < 4 {
 			continue
@@ -106,7 +103,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 			fmt.Sprintf("`%s` 只出现在节点图里（%d 次），文件其它部分（元件/实体/关卡定义）**找不到** —— 请确认它是否已配到某个组件上", id, inGraphs))
 	}
 
-	// CJK tokens: a token that is part of a graph name is expected to live only in graphs.
+	// 中文词：属于图名一部分的词，本来就只出现在图区。
 	for _, tok := range graphCJK {
 		if isPartOfGraphName(tok, declaredGraphNames) {
 			continue
@@ -121,7 +118,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 				"若是复合节点 / 节点自定义标题 / 定时器名则正常", tok, inGraphs))
 	}
 
-	// --- names that look like a collision (one is a prefix of another) ---
+	// --- 疑似撞名：一个名字是另一个的前缀 ---
 	all := append(append([]string{}, graphIDs...), graphCJK...)
 	sort.Strings(all)
 	for i := 0; i < len(all); i++ {
@@ -137,7 +134,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 		}
 	}
 
-	// --- naming style mix (snake_case vs camelCase) ---
+	// --- 命名风格混用（snake_case 与 camelCase）---
 	hasSnake, hasCamel := false, false
 	for _, id := range graphIDs {
 		if isNoise(id) || !strings.ContainsAny(id, "_") && !hasUpper(id) {
@@ -154,7 +151,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 			"节点图里同时存在 snake_case 与 camelCase 命名 —— 平台两种都合法，但混用会让“名字写错”变成高频排查项")
 	}
 
-	// --- forbidden naming (our own convention: no self/enemy framing) ---
+	// --- 禁用命名（我们自己的约定：不要"我方 / 敌方"视角）---
 	for _, bad := range lintBannedNames {
 		for _, id := range all {
 			if strings.EqualFold(id, bad) || strings.HasPrefix(strings.ToLower(id), bad) {
@@ -164,7 +161,7 @@ func lintExport(raw []byte, graphField int) []Finding {
 		}
 	}
 
-	// --- per-graph size ---
+	// --- 每张图的规模 ---
 	for _, g := range graphs {
 		n := len(g.Nodes)
 		switch {
@@ -173,20 +170,19 @@ func lintExport(raw []byte, graphField int) []Finding {
 		case n > 3000:
 			add("error", "graph-too-large", fmt.Sprintf("图 `%s` 有 %d 个节点，超过平台硬上限 3000", g.Name, n))
 		case n > 300:
-			// Kept as info on purpose: hard limits are the editor's business (风险检查 may
-			// well cover them), so this only nudges when a graph becomes hard to maintain.
+			// 刻意保持 info 级别：硬上限是编辑器的事（官方风险检查很可能已经覆盖），
+			// 这里只在图开始**难以维护**时轻提示一下。
 			add("info", "graph-large", fmt.Sprintf("图 `%s` 有 %d 个节点，接近可维护上限（平台上限 3000）", g.Name, n))
 		}
 	}
 
-	// --- custom variables: declared types (the "type written as 整数" class of bug) ---
+	// --- 自定义变量：声明的类型（"类型写成整数"那一类坑）---
 	lintVariables(raw, knownVarTypes, add)
 
-	// --- destroy-event placement (advisory, not a verdict) ---
-	// The platform only fires 实体销毁时 / 实体移除 on the LEVEL ENTITY's graphs. We cannot read
-	// which entity a graph is attached to (see docs/node-graph-extraction.md: graph ids are
-	// scoped locally and never referenced elsewhere), so this can only be a reminder -- but it is
-	// the reminder that catches "attached it to the element and nothing happened".
+	// --- 销毁事件的挂载位置（**提醒**，不是判定）---
+	// 平台只在【关卡实体】的图上触发 实体销毁时 / 实体移除。我们读不出"图挂在哪个实体上"
+	// （见 docs/node-graph-extraction.md：图 id 是局部作用域，文件里别处从未引用），
+	// 所以这里只能给提醒 —— 但正是这条提醒，能抓住"挂到元件上、然后什么都没发生"那种情况。
 	nodeTypes := loadNodeTypes("node-types.txt")
 	for _, g := range graphs {
 		for _, n := range g.Nodes {
@@ -223,8 +219,8 @@ func hasUpper(s string) bool {
 	return false
 }
 
-// trailingOffset extracts the offset from a walk error of the form "... at offset 12345",
-// so a stop at the natural end of file is not reported as a problem. Returns -1 if unknown.
+// trailingOffset 从形如 "... at offset 12345" 的走查错误里取出偏移量，
+// 这样"停在文件自然结尾"就不会被当成问题。取不到时返回 -1。
 func trailingOffset(msg string) int {
 	i := strings.LastIndex(msg, "offset ")
 	if i < 0 {
@@ -245,9 +241,9 @@ func trailingOffset(msg string) int {
 	return n
 }
 
-// isPartOfGraphName reports whether a CJK token is a fragment of a graph name. The CJK token
-// regex splits on ASCII characters, so "关卡-建筑销毁" yields "关卡" and "建筑销毁", and
-// "复合节点8" yields "复合节点" -- both must not be mistaken for dangling references.
+// isPartOfGraphName 判断某个中文词是不是**图名的片段**。中文分词正则会按 ASCII 字符切开，
+// 所以 "关卡-建筑销毁" 会切出 "关卡" 与 "建筑销毁"，"复合节点8" 会切出 "复合节点" ——
+// 这两者都不能被误判成悬空引用。
 func isPartOfGraphName(tok string, graphNames map[string]bool) bool {
 	for name := range graphNames {
 		if strings.Contains(name, tok) {
@@ -257,7 +253,7 @@ func isPartOfGraphName(tok string, graphNames map[string]bool) bool {
 	return false
 }
 
-// renderLint produces the Markdown lint report.
+// renderLint 生成 Markdown 格式的检查报告。
 func renderLint(srcName string, findings []Finding, graphNames []string) string {
 	var b strings.Builder
 	order := map[string]int{"error": 0, "warn": 1, "info": 2}

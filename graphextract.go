@@ -1,23 +1,23 @@
-// Graph extraction: turn the node-graph field into a plain-text/markdown intermediate file.
+// 节点图提取：把节点图字段转成纯文本 / Markdown 中间文件。
 //
-// Reverse-engineered shape of one graph (field 10 of the container, one top-level f1 per graph):
+// 一张图的逆向结构（容器字段 10，每张图一个顶层 f1）：
 //
-//	f1  message            graph
-//	  f1  message          graph body
-//	    f1 message         header   (f1 id, f2 container id, f3 ?, f5 version-ish 0x40000005)
-//	    f2 text            graph name
-//	    f3 message         one NODE ENTRY, repeated
-//	      f1 varint          node index (1, 2, 3, ... consecutive)
-//	      f2 message         node record  -> its f1/f2/f3 = ids, f5 = NODE TYPE ID
-//	      f3 message         duplicate of the node record
-//	      f4 message         pin / connection descriptors (references small indices)
-//	      f5 fixed32         position X   (float32)
-//	      f6 fixed32         position Y   (float32)
-//	      (nested) f105.f1 text   optional custom node title
+//	f1  message            图
+//	  f1  message          图体
+//	    f1 message         头部（f1 是 id，f2 是容器 id，f3 未知，f5 类似版本号 0x40000005）
+//	    f2 text            图名
+//	    f3 message         一个**节点条目**，重复出现
+//	      f1 varint          节点索引（1、2、3… 连续）
+//	      f2 message         节点记录 -> 其 f1/f2/f3 是各种 id，**f5 = 节点类型 id**
+//	      f3 message         节点记录的副本
+//	      f4 message         引脚 / 连线描述符（内部引用小整数索引）
+//	      f5 fixed32         位置 X（float32）
+//	      f6 fixed32         位置 Y（float32）
+//	      （更深一层）f105.f1 text   可选的节点自定义标题
 //
-// Node type ids are internal (82, 250, 3360, ...) and the names are NOT in the file, so an
-// external lookup table is read from node-types.txt (one "id<TAB>name" per line). Anything
-// unmapped is reported as "type N" and listed at the end so the table can grow.
+// 节点类型 id 是内部的（82、250、3360 …），而**名字不在文件里**，所以从 node-types.txt
+// 读取外部映射表（每行一个 "id<TAB>名字"）。未映射的按 "type N" 报告，并在文末列出，
+// 方便映射表逐步长大。
 package main
 
 import (
@@ -38,8 +38,8 @@ type pbField struct {
 	Bytes  []byte
 }
 
-// parseMessage decodes a protobuf message into its fields. Returns false if b does not parse
-// cleanly and completely (which is how we tell messages apart from opaque payloads/text).
+// parseMessage 把一条 protobuf 消息解成字段列表。若 b 不能**完整、干净地**解析则返回 false
+// —— 这正是我们区分"消息"与"不透明载荷 / 文本"的依据。
 func parseMessage(b []byte) ([]pbField, bool) {
 	out := []pbField{}
 	pos := 0
@@ -100,20 +100,20 @@ type gNode struct {
 	HasPos bool
 	Title  string
 	Texts  []string
-	Pins   [][]byte // raw pin descriptors (f4 of the node entry)
+	Pins   [][]byte // 原始引脚描述符（节点条目的 f4）
 }
 
 type gGraph struct {
 	Name  string
 	Nodes []gNode
-	Links [][2]int // undirected connections between node indices
+	Links [][2]int // 节点索引之间的**无向**连线
 }
 
-// pinRefs pulls candidate node-index references out of one pin descriptor.
+// pinRefs 从一个引脚描述符里取出**候选的节点索引引用**。
 //
-// A pin descriptor looks like: f1 {f1: <node>, f2: <pin>}, f2 {f1: <node>, f2: <pin>},
-// sometimes f3 {…payload…}, f4 <small int>. Only the direct f1/f2 children are read, because
-// deeper messages (f5 etc.) carry variable/slot indices that would collide with node indices.
+// 引脚描述符形如：f1 {f1: <节点>, f2: <引脚>}、f2 {f1: <节点>, f2: <引脚>}，
+// 有时还有 f3 {…载荷…}、f4 <小整数>。这里**只读直接子节点 f1/f2**，
+// 因为更深的消息（f5 等）装的是变量 / 槽位索引，会和节点索引撞在一起。
 func pinRefs(pin []byte) []int {
 	fields, ok := parseMessage(pin)
 	if !ok {
@@ -135,8 +135,8 @@ func pinRefs(pin []byte) []int {
 	return out
 }
 
-// collectTexts walks a node entry's subtree and gathers every readable string together with
-// the field path that carried it, so we can tell custom titles from variable references.
+// collectTexts 走查节点条目的子树，把每个可读字符串连同**它所在的字段路径**一起收集起来，
+// 这样才能把"自定义标题"和"变量引用"区分开。
 func collectTexts(b []byte, path string, labels map[string]string, out *[]string, depth int) {
 	if depth > 12 {
 		return
@@ -164,9 +164,8 @@ func collectTexts(b []byte, path string, labels map[string]string, out *[]string
 	}
 }
 
-// graphBody descends through wrapper levels until it reaches the message that actually holds
-// the graph: the one carrying the name (f2 text) or node entries (f3 messages). Observed files
-// wrap each graph one level deep (f1 -> f1 -> {header, name, nodes}).
+// graphBody 逐层下钻包装层，直到找到**真正装图**的那条消息：带图名（f2 文本）或
+// 节点条目（f3 消息）的那一条。实测文件把每张图多包了一层（f1 -> f1 -> {头部, 图名, 节点}）。
 func graphBody(b []byte) []pbField {
 	fields, ok := parseMessage(b)
 	if !ok {
@@ -196,7 +195,7 @@ func graphBody(b []byte) []pbField {
 	return fields
 }
 
-// extractGraphs decodes the graphs in one container field payload.
+// extractGraphs 解码某个容器字段载荷里的全部节点图。
 func extractGraphs(payload []byte) []gGraph {
 	top, ok := parseMessage(payload)
 	if !ok {
@@ -245,7 +244,7 @@ func extractGraphs(payload []byte) []gGraph {
 				}
 				labels := map[string]string{}
 				collectTexts(bf.Bytes, "", labels, &node.Texts, 0)
-				// a custom node title lives under ...f105.f1
+				// 节点自定义标题位于 ...f105.f1
 				for path, s := range labels {
 					if strings.HasSuffix(path, ".f105.f1") {
 						node.Title = s
@@ -255,7 +254,7 @@ func extractGraphs(payload []byte) []gGraph {
 			}
 		}
 		if cur.Name != "" || len(cur.Nodes) > 0 {
-			// resolve links: any pin reference that names another node in the same graph
+			// 解析连线：凡是引用了同一张图里另一个节点的引脚引用
 			valid := map[int]bool{}
 			for _, n := range cur.Nodes {
 				valid[n.Index] = true
@@ -285,8 +284,8 @@ func extractGraphs(payload []byte) []gGraph {
 	return graphs
 }
 
-// loadNodeTypes merges the verified built-in names (nodetypes.go) with an optional
-// node-types.txt. Missing file is not an error: only the built-ins are used.
+// loadNodeTypes 把已验证的内置名字（nodetypes.go）与可选的 node-types.txt 合并。
+// 文件不存在不算错误：只用内置表。
 func loadNodeTypes(path string) map[uint64]string {
 	out := map[uint64]string{}
 	for id, name := range builtinNodeTypes {
@@ -319,10 +318,10 @@ func loadNodeTypes(path string) map[uint64]string {
 	return out
 }
 
-// renderGraphs produces the plain-text intermediate file (no JSON anywhere).
+// renderGraphs 生成纯文本中间文件（全程不用 JSON）。
 //
-// Deliberately minimal: node id + resolved name + optional custom title + refs, then links.
-// Positions are omitted - they are noise once you render a vertical flow instead of a canvas.
+// 刻意保持最小：节点 id + 解析出的名字 + 可选自定义标题 + 引用，然后是连线。
+// **位置被略去** —— 一旦改成竖向流程而不是画布，坐标就是噪声。
 func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# node graphs - %s\n\n", srcName)
@@ -398,8 +397,8 @@ func uniqStrings(in []string) []string {
 	return out
 }
 
-// dumpPins is a debugging aid: it prints every pin descriptor of every graph in raw form, so
-// the field layout can be calibrated against a graph whose wiring is known from a screenshot.
+// dumpPins 是调试辅助：把每张图的每个引脚描述符按原始形式打印出来，
+// 便于拿"接线已知（来自截图）"的图来标定字段布局。
 func dumpPins(payload []byte) string {
 	var b strings.Builder
 	top, ok := parseMessage(payload)

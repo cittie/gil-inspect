@@ -1,4 +1,4 @@
-# never commit exports or anything derived from game content
+# 绝不提交导出文件，或任何由游戏内容派生的东西
 *.gil
 *.gis
 *.gilh
@@ -7,16 +7,16 @@ export/
 *.inspect.md
 gil-snapshot.json
 
-# build output
+# 构建产物
 /gil-inspect
 /gil-inspect.exe
 /dist/
 
-# go
+# Go
 *.test
 *.out
 
-# editors / os
+# 编辑器 / 操作系统
 .DS_Store
 Thumbs.db
 .idea/

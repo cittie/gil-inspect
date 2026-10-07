@@ -1,11 +1,10 @@
-// Graph dump: expand the node-graph section of a .gil into an indented tree.
+// 图转储：把 .gil 的节点图区展开成缩进树。
 //
-// This is the exploratory half of node-graph extraction. The container stores node graphs
-// in one top-level field (observed: f10) as plain protobuf, but the schema is undocumented,
-// so we render the tree generically - field numbers, wire types, values, inline strings and
-// float32 payloads - and identify structure by reading it.
+// 这是节点图提取的**探索侧**。容器把节点图放在一个顶层字段里（实测为 f10），内容就是普通
+// protobuf，但 schema 没有公开文档，所以我们**通用地**渲染这棵树 —— 字段号、wire 类型、数值、
+// 内联字符串、float32 载荷 —— 再靠读它来识别结构。
 //
-// Output is Markdown (no JSON): one line per field, indented by nesting depth.
+// 输出为 Markdown（不用 JSON）：每个字段一行，按嵌套深度缩进。
 package main
 
 import (
@@ -35,8 +34,8 @@ func (d *dumper) line(indent int, format string, a ...any) {
 	fmt.Fprintf(&d.sb, format+"\n", a...)
 }
 
-// looksLikeMessage reports whether b parses cleanly and completely as a protobuf message.
-// Used to decide between "nested message" and "opaque bytes / text".
+// looksLikeMessage 判断 b 是否能**完整、干净地**解析成一条 protobuf 消息。
+// 用来区分"嵌套消息"与"不透明字节 / 文本"。
 func looksLikeMessage(b []byte) bool {
 	if len(b) == 0 {
 		return false
@@ -81,7 +80,7 @@ func looksLikeMessage(b []byte) bool {
 	return fields > 0 && pos == len(b)
 }
 
-// isTexty reports whether b looks like human-readable UTF-8 rather than binary noise.
+// isTexty 判断 b 看起来像人类可读的 UTF-8，而不是二进制噪声。
 func isTexty(b []byte) bool {
 	if len(b) == 0 || !utf8.Valid(b) {
 		return false
@@ -179,14 +178,14 @@ func (d *dumper) fields(b []byte, indent, depth int) {
 	}
 }
 
-// dumpField expands one top-level container field into a Markdown tree.
+// dumpField 把一个顶层容器字段展开成 Markdown 树。
 func dumpField(raw []byte, fieldNum int, srcName string) (string, bool) {
 	fields, _ := parseFields(raw, 20)
 	for _, f := range fields {
 		if f.N != fieldNum || f.Wire != "bytes" {
 			continue
 		}
-		// re-walk to recover the payload offset (parseFields does not keep it)
+		// 重新走一遍以取回 payload 偏移量（parseFields 不保留它）
 		pos := 20
 		for pos < len(raw) {
 			key, err := readVarint(raw, &pos)
@@ -228,7 +227,7 @@ func dumpField(raw []byte, fieldNum int, srcName string) (string, bool) {
 	return "", false
 }
 
-// fieldPayload returns the raw bytes of one top-level container field (wire type 2).
+// fieldPayload 返回某个顶层容器字段（wire 类型 2）的原始字节。
 func fieldPayload(raw []byte, fieldNum int) ([]byte, bool) {
 	pos := 20
 	for pos < len(raw) {

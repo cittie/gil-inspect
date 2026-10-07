@@ -1,13 +1,12 @@
-# node type lookup table - "id<TAB>name", one per line, '#' starts a comment
+# 节点类型映射表 —— 每行 "id<TAB>名字"，'#' 开头是注释
 #
-# The tool only READS this file; it is deliberately not bundled in the repository.
+# 工具**只读**这个文件；仓库里刻意不附带第三方映射表。
 #
-# The first nine entries were derived from our own level (a screenshot of the 关卡-建筑销毁
-# graph next to the extracted data), verified three ways:
-#   1. node count matches (12 nodes / 12 entries)
-#   2. type multiplicity matches (656 appears 4x = four 设置阵营结算成功状态 nodes)
-#   3. relative positions match (linear fit of screen x -> stored x; y axis points down)
-# No third-party data was used for these lines.
+# 前九条来自我们自己的关卡（一张 关卡-建筑销毁 图的截图 与提取数据对照），三重验证：
+#   1. 节点数吻合（12 个节点 / 12 个条目）
+#   2. 类型重复次数吻合（656 出现 4 次 = 四个 设置阵营结算成功状态）
+#   3. 相对位置吻合（屏幕 x 与存储 x 线性拟合；y 轴向下）
+# 这九行**不含任何第三方数据**。
 
 373	实体销毁时
 2	双分支
@@ -20,103 +19,97 @@
 77	结算关卡
 
 # ---------------------------------------------------------------------------
-# Second batch (2026-10-07): derived from a community compound-node pack (.gia).
+# 第二批（2026-10-07）：来自一个第三方分享的复合节点包（.gia）。
 #
-# Method: an asset pack stores 87 compound-node DEFINITIONS (kind marker 12, carrying the
-# display name) followed by 87 IMPLEMENTATIONS (kind marker 9, carrying the graph). The id
-# fields are kind markers, not identities, so the pairing is POSITIONAL:
-# definition #N <-> implementation #N. Each node is stored twice (an f2/f3 duplicate pair),
-# so raw counts must be halved.
+# 方法：资产包把 87 条复合节点"**定义**"（种类标记 12，带显示名）放在前面，
+# 后面跟 87 条"**实现**"（种类标记 9，带图体）。那些 id 字段是**种类标记而不是身份**，
+# 所以配对靠**顺序**：定义 #N ↔ 实现 #N。每个节点存两份（f2/f3 重复对），
+# 因此原始计数要**除以 2**。
 #
-# A compound whose graph is a SINGLE node is a 1:1 wrapper, so its name identifies the
-# primitive -- and each name below was then confirmed against the official node catalogue
-# in our local docs mirror. `3 多分支` is the strongest evidence of all: it was already
-# verified from our own level, and the pack's "[执行]根据实体类型执行节点" independently
-# resolves to the same id.
+# 图里只有**单个节点**的复合节点就是 **1:1 包装**，它的名字即原始节点名 ——
+# 下面每个名字随后都在本地文档镜像的**官方节点目录**里核对过。
+# `3 多分支` 是最强的一条证据：它早就用我们自己的关卡验证过，
+# 而这个包里的 "[执行]根据实体类型执行节点" **独立地**解出了同一个 id。
 #
-# 1:1 wrappers (single node in the graph):
+# 1:1 包装（图里只有一个节点）：
 75	获取关卡实体
 22	设置自定义变量
 50	获取自定义变量
 310	获取全局计时器当前时间
-# N copies of a single primitive (the compound is a loop/aggregation the author wrote):
+# 同一个原始节点的 N 份拷贝（复合节点是作者自己写的循环 / 聚合）：
 10	加法运算
 11	减法运算
 12	乘法运算
 226	逻辑与运算
 227	逻辑或运算
 
-# Not yet named (candidate 1:1 wrapper, official name unconfirmed):
-# 204	?  (pack calls it "[运算]获得特定整数")
+# 尚未命名（疑似 1:1 包装，官方名未确认）：
+# 204	?（包里的名字是 "[运算]获得特定整数"）
 
 # ---------------------------------------------------------------------------
-# Third batch (2026-10-07): read out of OUR OWN level, using the asset pack as a second
-# witness. Each name was then confirmed to exist in the official node catalogue.
+# 第三批（2026-10-07）：从**我们自己的关卡**读出来的，用资产包做第二证人。
+# 每个名字随后都确认在官方节点目录里存在。
 #
-# Evidence per line:
-#   79 启动定时器        pack: every 时间 compound uses it; our graph 兵营创建 node 1 carries the
-#                        custom title "出兵定时器" (that node's 定时器名称 parameter)
-#   83 定时器触发时      pack: "[时间]自身定时器触发时"; our 兵营出兵 graph opens with it
-#   252 创建元件         pack: all three "spawn an element" compounds use it; our 兵营出兵 node 2
-#                        is exactly where the unit gets created
-#   99 获取实体位置与旋转  pack: every position compound uses it; confirmed by SCREENSHOT -- the
-#                        node feeding 创建元件's 位置/旋转 pins reads "获取实体位置与旋转"
+# 逐条证据：
+#   79 启动定时器        包：所有"时间"类复合节点都用它；我们 兵营创建 图的节点 1 带着
+#                        自定义标题 "出兵定时器"（那正是它的"定时器名称"入参）
+#   83 定时器触发时      包："[时间]自身定时器触发时"；我们 兵营出兵 图就由它开始
+#   252 创建元件         包：三个"刷 / 生成元件"类复合节点都用它；我们 兵营出兵 的节点 2
+#                        正是创建单位的地方
+#   99 获取实体位置与旋转  包：所有位置类复合节点都用它；**由截图确认** ——
+#                        喂给 创建元件 的"位置 / 旋转"引脚的节点就叫 "获取实体位置与旋转"
 79	启动定时器
 83	定时器触发时
 252	创建元件
 99	获取实体位置与旋转
 
-# Inferred from graph structure rather than from a screenshot (lower confidence, still fits
-# every constraint we can check -- confirm against an editor screenshot before relying on them):
-#   71  实体创建时          the event node in both 兵营创建 and 选阵营; both must start on it
-#   633 卡牌选择器完成时    node 1 of 选完阵营, the only event that graph can start from
+# 由**图结构推断**而非截图确认（置信度较低；虽然目前能查的约束全部吻合，
+# 但依赖它们之前请用编辑器截图确认）：
+#   71  实体创建时          兵营创建 与 选阵营 里剩下的那个事件；两张图都必须从它开始
+#   633 卡牌选择器完成时     选完阵营 的节点 1，那张图唯一可能的事件来源
 71	实体创建时
 633	卡牌选择器完成时
 
 # ---------------------------------------------------------------------------
-# Fourth batch (2026-10-07): read off a screenshot of our own 兵营出兵 graph.
+# 第四批（2026-10-07）：从我们自己的 兵营出兵 图截图上读出来的。
 #
-# How an ambiguous id gets settled with a screenshot: node entries store fixed32 x/y, and those
-# units are ~1:1 with editor pixels, so the screenshot gives a linear offset. Two already-known
-# nodes in the same image pinned the offset (≈1234, 599), the other eight known nodes then landed
-# within ~40 px of prediction, and the last two candidates -- 38,-192 vs -334,124 -- matched
-# 设置实体阵营 and 查询实体阵营 respectively. tools/probe_node_positions.py prints those
-# coordinates. The same screenshot also confirmed 99 and produced 618, which appears twice in
-# this graph exactly as 切换造物巡逻模板 does on screen.
+# 截图如何解决"id 有歧义"：节点条目里存了 fixed32 x/y，而这些单位**与原图像素约 1:1**，
+# 所以截图与存储坐标之间只差一个**平移**。用同一张图里两个已知节点反解出偏移（≈1234, 599），
+# 其余八个已知节点随后都落在预测位置 **±40 px** 内，最后两个候选 —— (38,-192) 与 (-334,124) ——
+# 分别对上了 设置实体阵营 与 查询实体阵营。坐标由 tools/probe_node_positions.py 打印。
+# 同一张截图还确认了 99，并给出 618：它在图里出现两次，正如"切换造物巡逻模板"在屏幕上出现两次。
 618	切换造物巡逻模板
 250	设置实体阵营
 249	查询实体阵营
 
 # ---------------------------------------------------------------------------
-# Fifth batch (2026-10-07): from a screenshot of our own 选阵营 graph (3 nodes:
-# 实体创建时 / 拼装列表 / 唤起卡牌选择器). Coordinates decided the two ambiguous ones, and the
-# pack corroborated: 169 is used by a dozen unrelated compounds (time / random / matrix / 运算),
-# which is what a generic list builder looks like -- a card selector could never appear in a
-# matrix compound.
+# 第五批（2026-10-07）：来自我们自己的 选阵营 图截图（3 个节点：
+# 实体创建时 / 拼装列表 / 唤起卡牌选择器）。坐标定下了两个有歧义的，资产包也佐证了：
+# 169 被十几个互不相关的复合节点用到（时间 / 随机 / 矩阵 / 运算），这正是"通用列表工具"的样子
+# —— 卡牌选择器**不可能**出现在矩阵类复合节点里。
 #
-# Side observation from that screenshot: 卡牌选择器索引 reads 1073741847 = 0x40000000 + 23, i.e.
-# resource references carry the 0x40000000 base. (The asset pack's definition records all carried
-# a literal 23 in f1.f2 -- plausibly the same registry, but not yet proven.)
+# 那张截图的一个附带观察：卡牌选择器索引显示为 1073741847 = 0x40000000 + 23，
+# 也就是说**资源引用带 0x40000000 基址**。（资产包的定义记录里都带一个字面量 23（在 f1.f2），
+# 很可能出自同一注册表，但**尚未证实**。）
 632	唤起卡牌选择器
 169	拼装列表
 
 # ---------------------------------------------------------------------------
-# Sixth batch (2026-10-07): the last unmapped id in our own level, from a screenshot of 选完阵营.
-# The prediction made before the screenshot ("a list-index node, since it feeds the 阵营 write and
-# the pack only uses it for index-into-list compounds") turned out correct.
+# 第六批（2026-10-07）：我们自己关卡的**最后一个**未映射 id，来自 选完阵营 的截图。
+# 截图之前的预测（"应该是个列表按下标取值的节点，因为它喂给写 阵营 的那一步，
+# 而资产包只在按下标取值的复合节点里用到它"）**被证实是对的**。
 #
-# That screenshot also makes the whole graph readable, which is what the tool is for:
+# 那张截图同时让整张图变得可读 —— 这正是本工具的用途：
 #
 #   [卡牌选择器完成时] (目标玩家 / 选择结果列表 / 完成原因 / 卡牌选择器索引)
 #      ├─ 是否相等(卡牌选择器索引, 1073741847) → 双分支
 #      │      是 → 设置自定义变量(目标实体=目标玩家, 变量名="阵营", 变量值=…, 是否触发事件=否)
-#      │      否 → unconnected
+#      │      否 → **未接线**
 #      └─ 获取列表对应值(列表=选择结果列表, 序号=0) → 值 → 设置自定义变量.变量值
 #
-# NOTE the logic gap this exposes: 完成原因 is NOT wired to anything, so a timeout / closed
-# selector still assigns 阵营 from 选择结果列表[0] -- and per the official docs that list can be
-# EMPTY when the player closes the selector without choosing. Worth checking 完成原因 (or at least
-# the list's length) before writing.
+# ⚠️ 注意这暴露出的**逻辑缺口**：`完成原因` **完全没有接线**，所以超时 / 玩家关掉选择器时，
+# 照样会用 `选择结果列表[0]` 去写 `阵营` —— 而按官方文档，玩家**没选就关闭**时该列表**可能是空的**。
+# 写之前值得判断一下 `完成原因`（或至少判断列表长度）。
 128	获取列表对应值
 
 

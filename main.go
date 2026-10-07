@@ -1,8 +1,8 @@
-// Command gil-inspect reports what is inside a Miliastra Wonderland level export (.gil).
+// gil-inspect：报告千星奇域关卡导出文件（.gil）里到底有什么。
 //
-// STRICTLY READ-ONLY: the input file is only ever opened for reading. This program writes
-// exactly two things - a Markdown report and a JSON snapshot of field sizes plus name sets -
-// and never patches, rewrites or re-encodes the .gil. See README.md for the reasoning.
+// **严格只读**：输入文件只会以只读方式打开。本程序只写两类东西 —— 一份 Markdown 报告，以及
+// 一份记录字段尺寸与名字集合的 JSON 快照 —— **绝不**修改、重写或重新编码 .gil。
+// 这样做的理由见 README.md。
 package main
 
 import (
@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// Field is one top-level entry of the container payload.
+// Field 是容器载荷里的一个顶层条目。
 type Field struct {
 	N     int    `json:"n"`
 	Wire  string `json:"wire"`
@@ -25,7 +25,7 @@ type Field struct {
 	Value uint64 `json:"value,omitempty"`
 }
 
-// Snapshot is what we remember between runs: sizes and names, never payload bytes.
+// Snapshot 是两次运行之间记住的东西：**尺寸与名字**，绝不记录载荷字节。
 type Snapshot struct {
 	Path    string   `json:"path"`
 	Size    int      `json:"size"`
@@ -75,7 +75,7 @@ func main() {
 		*snap = filepath.Join(filepath.Dir(*path), "gil-snapshot.json")
 	}
 
-	raw, err := os.ReadFile(*path) // read-only, always
+	raw, err := os.ReadFile(*path) // 始终只读
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "cannot read file:", err)
 		os.Exit(1)
@@ -98,7 +98,7 @@ func main() {
 	prev := loadSnapshot(*snap)
 	sizeDiffs, newCJK, goneCJK := diff(prev, fields, cjk)
 
-	// snapshot: names and sizes only
+	// 快照：只存名字与尺寸
 	cur := Snapshot{
 		Path:    filepath.Base(*path),
 		Size:    len(raw),
@@ -201,7 +201,7 @@ func main() {
 		}
 	}
 
-	// console summary
+	// 控制台摘要
 	fmt.Printf("file      : %s\n", info.Name())
 	fmt.Printf("size      : %d bytes\n", len(raw))
 	fmt.Printf("fields    : %d\n", len(fields))
@@ -249,9 +249,9 @@ func loadKeyFile(path string) []string {
 	return extra
 }
 
-// readVarint decodes a base-128 varint. NOTE: never name the parameter b and a local B -
-// Go is case-sensitive, so that specific trap is not a problem here (it was in the
-// PowerShell version of this tool, where variable names are case-INsensitive).
+// readVarint 解码 base-128 varint。注意：不要把参数命名为 b 同时又定义局部变量 B ——
+// Go **区分大小写**，所以这个坑在 Go 里不存在
+// （它在 PowerShell 版本的同类工具里出现过，因为那里变量名**不区分**大小写）。
 func readVarint(buf []byte, pos *int) (uint64, error) {
 	var val uint64
 	var shift uint
@@ -272,7 +272,7 @@ func readVarint(buf []byte, pos *int) (uint64, error) {
 	}
 }
 
-// parseFields walks the top-level protobuf entries of the payload (which starts at offset 20).
+// parseFields 走查载荷的顶层 protobuf 条目（载荷从偏移 20 开始）。
 func parseFields(buf []byte, start int) ([]Field, string) {
 	out := []Field{}
 	pos := start
@@ -317,7 +317,7 @@ func parseFields(buf []byte, start int) ([]Field, string) {
 	return out, ""
 }
 
-// containerHeader decodes the five big-endian 32-bit words that precede the payload.
+// containerHeader 解码载荷前面那五个大端 32 位字。
 func containerHeader(buf []byte) []uint32 {
 	out := []uint32{}
 	for i := 0; i+3 < len(buf) && i < 20; i += 4 {

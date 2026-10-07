@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// encDecl builds the observed declaration shape: field1{ field2: name, field3: typeID }.
+// encDecl 拼出实测到的声明形状：field1{ field2: 名字, field3: 类型id }。
 func encDecl(name string, typeID uint64) []byte {
 	inner := encBytesField(2, []byte(name))
 	inner = append(inner, encVarintField(3, typeID)...)
@@ -17,7 +17,7 @@ func encDecl(name string, typeID uint64) []byte {
 func TestScanVariableDeclarations(t *testing.T) {
 	raw := append([]byte("padpadpad!"), encDecl("spawn_unit", 21)...)
 	raw = append(raw, encDecl("spawn_interval", 10)...)
-	raw = append(raw, encDecl("spawn_unit", 21)...) // same declaration on another element
+	raw = append(raw, encDecl("spawn_unit", 21)...) // 同一个声明出现在另一个元件上
 
 	decls := scanVariableDeclarations(raw)
 	if len(decls) != 2 {
@@ -35,7 +35,7 @@ func TestScanVariableDeclarations(t *testing.T) {
 	}
 }
 
-// The bug this feature exists for: an element id stored in a numeric variable.
+// 这个特性存在的原因就是那个坑：**元件ID 被存进了数值型变量**。
 func TestLintFlagsReferenceNameWithNumericType(t *testing.T) {
 	raw := encDecl("spawn_unit", 3) // 3 = 整数
 	findings := lintExport(raw, 10)
@@ -45,13 +45,13 @@ func TestLintFlagsReferenceNameWithNumericType(t *testing.T) {
 }
 
 func TestLintAcceptsReferenceNameWithReferenceType(t *testing.T) {
-	raw := encDecl("spawn_unit", 21) // 21 = 元件ID, correct
+	raw := encDecl("spawn_unit", 21) // 21 = 元件ID，正确写法
 	if hasFinding(lintExport(raw, 10), "reference-typed-as-number", "spawn_unit") {
 		t.Error("spawn_unit declared as 元件ID must not be flagged")
 	}
 }
 
-// Same name, two different types anywhere in the container is a definite mistake.
+// 同一个名字在容器里出现两种类型，一定是写错了。
 func TestLintFlagsVariableTypeConflict(t *testing.T) {
 	raw := append(encDecl("spawn_unit", 21), encDecl("spawn_unit", 3)...)
 	if !hasFinding(lintExport(raw, 10), "variable-type-conflict", "spawn_unit") {
@@ -59,13 +59,12 @@ func TestLintFlagsVariableTypeConflict(t *testing.T) {
 	}
 }
 
-// A float default under a non-float declared type is a contradiction.
-// Note the default is a length-delimited 4-byte blob in the real format
-// ("0a 04 <float32>"), not a fixed32 field.
+// 非浮点类型却带浮点默认值 —— 自相矛盾。
+// 注意真实格式里默认值是**长度分隔的 4 字节块**（"0a 04 <float32>"），不是 fixed32 字段。
 func TestLintFlagsDefaultTypeMismatch(t *testing.T) {
 	blob := make([]byte, 4)
 	binary.LittleEndian.PutUint32(blob, math.Float32bits(12.0))
-	inner := encVarintField(3, 3) // declared 整数
+	inner := encVarintField(3, 3) // 声明为整数
 	inner = append(inner, encBytesField(1, blob)...)
 	raw := append(encDecl("spawn_interval", 3), encBytesField(20, inner)...)
 

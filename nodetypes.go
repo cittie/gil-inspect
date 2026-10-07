@@ -1,16 +1,14 @@
-// Node type ids -> names.
+// 节点类型 id -> 名字。
 //
-// The nine entries below were verified on 2026-10-05 against a screenshot of a real graph
-// (关卡-建筑销毁) cross-checked with the extracted node list: node count, type multiplicity and
-// relative positions all agreed, and the custom titles matched. Node *names* themselves are
-// published in the official docs, so recording the mapping here redistributes nothing
-// third-party -- it is our own derivation.
+// 下面九条于 2026-10-05 用一张真实节点图（关卡-建筑销毁）的截图与提取结果交叉验证：节点数、
+// 类型重复次数、相对位置全部吻合，自定义标题也对得上。节点**名字**本身在官方文档里公开，
+// 所以在这里记录映射**不涉及转发第三方内容** —— 这是我们自己的推导结果。
 //
-// Everything else stays unmapped until evidence arrives; extras go in node-types.txt, which the
-// tool only reads. Unmapped types render as "?N" rather than being hidden.
+// 其余 id 在有证据之前一律保持未映射；补充映射写进 node-types.txt（工具只读该文件）。
+// 未映射的类型显示为 "?N"，而不是隐藏掉。
 package main
 
-// builtinNodeTypes: verified against our own level, so they hold even without node-types.txt.
+// builtinNodeTypes：用我们自己的关卡验证过，因此即使没有 node-types.txt 也生效。
 var builtinNodeTypes = map[uint64]string{
 	373:  "实体销毁时",
 	2:    "双分支",
@@ -23,10 +21,9 @@ var builtinNodeTypes = map[uint64]string{
 	77:   "结算关卡",
 }
 
-// The merge of built-ins with node-types.txt lives in loadNodeTypes (graphextract.go).
+// 内置表与 node-types.txt 的合并逻辑在 loadNodeTypes（见 graphextract.go）。
 
-// destroyEventTypes lists the events the platform only honours on the level entity's graphs.
-// Official FAQ: apart from the level entity's node graphs, the entity-destroy / entity-remove
-// events do not fire at all. Attaching them to an element fails silently, which is why this
-// deserves a lint reminder.
+// destroyEventTypes：这些事件**只在关卡实体的节点图上生效**。
+// 官方 FAQ 明确：除【关卡实体】的节点图外，实体销毁 / 移除事件**根本不会触发**。
+// 挂到元件上会**静默失效**，所以值得用一条 lint 提醒。
 var destroyEventTypes = []string{"实体销毁时", "实体移除时", "实体移除/销毁时"}

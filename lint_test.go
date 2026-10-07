@@ -5,23 +5,23 @@ import (
 	"testing"
 )
 
-// buildLintContainer assembles a minimal container: 20-byte header + one graph field.
+// buildLintContainer 拼一个最小容器：20 字节头 + 一个图字段。
 func buildLintContainer(graphBody []byte) []byte {
 	raw := make([]byte, 20)
 	return append(raw, encBytesField(10, graphBody)...)
 }
 
-// A variable that graphs reference but nothing declares must be reported. Without this test,
-// "no findings on the real file" could just as well mean the check never fires.
+// 图里引用了、但没有任何地方声明的变量**必须**被报出来。没有这个测试，
+// "真实文件上零命中"也可能只是**这条检查从来没生效过**。
 func TestLintFindsDanglingReference(t *testing.T) {
-	// node entry: index 1, record with type 3360, plus a text field carrying the name
+	// 节点条目：索引 1，记录类型 3360，外加一个携带名字的文本字段
 	rec := encVarintField(5, 3360)
 	entry := encVarintField(1, 1)
 	entry = append(entry, encBytesField(2, rec)...)
 	entry = append(entry, encBytesField(105, encBytesField(1, []byte("ghost_variable")))...)
 	body := encBytesField(2, []byte("测试图"))
 	body = append(body, encBytesField(3, entry)...)
-	raw := buildLintContainer(encBytesField(1, body)) // graph wrapper level
+	raw := buildLintContainer(encBytesField(1, body)) // 图的包装层
 
 	findings := lintExport(raw, 10)
 	if !hasFinding(findings, "dangling-reference", "ghost_variable") {
@@ -29,7 +29,7 @@ func TestLintFindsDanglingReference(t *testing.T) {
 	}
 }
 
-// The same name appearing outside the graph field must clear it.
+// 同一个名字出现在图字段**之外**时，就不该再报。
 func TestLintAcceptsDeclaredReference(t *testing.T) {
 	rec := encVarintField(5, 3360)
 	entry := encVarintField(1, 1)
@@ -38,7 +38,7 @@ func TestLintAcceptsDeclaredReference(t *testing.T) {
 	body := encBytesField(2, []byte("测试图"))
 	body = append(body, encBytesField(3, entry)...)
 	raw := buildLintContainer(encBytesField(1, body))
-	// a different top-level field carries the declaration
+	// 由另一个顶层字段承载这个声明
 	raw = append(raw, encBytesField(4, []byte("declared_var"))...)
 
 	if hasFinding(lintExport(raw, 10), "dangling-reference", "declared_var") {
@@ -46,7 +46,7 @@ func TestLintAcceptsDeclaredReference(t *testing.T) {
 	}
 }
 
-// Short alphanumeric runs are internal ids, not names.
+// 短的字母数字串是内部 id，不是名字。
 func TestLintIgnoresShortCodes(t *testing.T) {
 	entry := encVarintField(1, 1)
 	entry = append(entry, encBytesField(105, encBytesField(1, []byte("rCB")))...)
@@ -59,7 +59,7 @@ func TestLintIgnoresShortCodes(t *testing.T) {
 	}
 }
 
-// Graph name fragments must not be reported as graph-only names.
+// 图名的片段不能被报成"只在图区出现的名字"。
 func TestLintIgnoresGraphNameFragments(t *testing.T) {
 	entry := encVarintField(1, 1)
 	body := encBytesField(2, []byte("关卡-建筑销毁"))
@@ -73,7 +73,7 @@ func TestLintIgnoresGraphNameFragments(t *testing.T) {
 	}
 }
 
-// A stop at the natural end of file is not a parse problem.
+// 停在文件的自然结尾不算解析问题。
 func TestLintParseHealthOnlyOnEarlyStop(t *testing.T) {
 	entry := encVarintField(1, 1)
 	body := encBytesField(2, []byte("图"))
@@ -96,10 +96,10 @@ func hasFinding(findings []Finding, code, needle string) bool {
 	return false
 }
 
-// The platform only fires 实体销毁时 on the level entity's graphs, and we cannot read which
-// entity a graph belongs to -- so this must at least be *mentioned* whenever the node appears.
+// 平台只在关卡实体的图上触发 实体销毁时，而我们读不出图属于哪个实体 ——
+// 所以只要出现该节点，至少必须**提一句**。
 func TestLintMentionsDestroyEventPlacement(t *testing.T) {
-	rec := encVarintField(5, 373) // 373 = 实体销毁时 (verified)
+	rec := encVarintField(5, 373) // 373 = 实体销毁时（已验证）
 	entry := encVarintField(1, 1)
 	entry = append(entry, encBytesField(2, rec)...)
 	body := encBytesField(2, []byte("元件上的销毁图"))
@@ -111,7 +111,7 @@ func TestLintMentionsDestroyEventPlacement(t *testing.T) {
 	}
 }
 
-// A graph without a destroy event must not trigger it.
+// 不含销毁事件的图，不能触发这条提醒。
 func TestLintDestroyReminderOnlyWhenNodePresent(t *testing.T) {
 	rec := encVarintField(5, 2) // 双分支
 	entry := encVarintField(1, 1)

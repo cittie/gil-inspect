@@ -1,21 +1,20 @@
-# Custom-variable type ids  ->  names
+# 自定义变量类型 id -> 名字
 #
-# Same idea as node-types.txt: the .gil stores an internal id for each variable's declared
-# type, so this file maps ids to names. The tool only READS it; nothing is bundled beyond the
-# ids verified against our own level, and you can extend it from any source you prefer.
+# 与 node-types.txt 同一套思路：`.gil` 为每个变量声明的类型存了一个内部 id，
+# 所以这个文件把 id 映射成名字。工具**只读**它；除了我们自己在关卡上验证过的 id 之外，
+# 仓库里不附带任何别的东西，你也可以按自己的来源随意扩充。
 #
-# Format: id<TAB>name     ('#' starts a comment)
+# 格式：id<TAB>名字     （'#' 开头是注释）
 #
-# Verified empirically on 2026-10-05 against variables whose types we know from building the
-# level, so these three are facts rather than guesses:
+# 这三条于 2026-10-05 实测确认 —— 用的是"建房时已知类型"的变量，所以是事实而非猜测：
 #
 #	4	布尔		(isBase)
 #	10	浮点		(spawn_interval)
 #	21	元件ID		(spawn_unit)
 #
-# They are already built into the tool; listing them here documents the format.
-# Unmapped ids appear in the -lint report as "type N（未映射）" together with the variable name,
-# which is usually enough to identify them.
+# 它们已经内置在工具里；写在这里只是为了说明格式。
+# 未映射的 id 会在 -lint 报告里显示成 "type N（未映射）" 并附上变量名，
+# 通常已经足够辨认它是什么。
 #
 # 4	布尔
 # 10	浮点

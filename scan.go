@@ -1,12 +1,10 @@
-// Batch scan: summarise many exports at once.
+// 批量扫描：一次汇总多个导出文件。
 //
-// Purpose (2026-10-05): official tutorial levels ship as .gil downloads, and each tutorial text
-// names the nodes it uses. Scanning a whole folder gives us, per file, the graph/node/type and
-// variable picture -- and at the end the UNION of node type ids across all files. Cross-reading
-// that against the tutorial texts is how the type-id table gets built without guessing or
-// borrowing a third-party table.
+// 目的（2026-10-05）：官方教程关卡以 .gil 形式提供下载，而每篇教程正文都写明了它用了哪些节点。
+// 扫一个目录就能得到每个文件的图 / 节点 / 类型与变量概况，最后再给出**全部文件节点类型 id 的并集**。
+// 拿这个并集去对照教程正文，就能**不靠猜、也不转发第三方映射表**地把类型表建起来。
 //
-// Read-only, like everything else here.
+// 与其它部分一样：**只读**。
 package main
 
 import (
@@ -27,15 +25,15 @@ type scanRow struct {
 	ParseWarn string
 }
 
-// scanExtensions: level saves (.gil) and asset files (.gia) share the same container layout --
-// a 20-byte header followed by protobuf -- so one scanner covers both.
+// scanExtensions：关卡存档（.gil）与资产文件（.gia）**容器格式相同** ——
+// 20 字节头 + protobuf —— 所以一个扫描器覆盖两者。
 var scanExtensions = map[string]bool{".gil": true, ".gia": true}
 
 func isScanCandidate(name string) bool {
 	return scanExtensions[strings.ToLower(filepath.Ext(name))]
 }
 
-// scanPath walks a file or directory and prints a summary plus the type-id unions.
+// scanPath 走查一个文件或目录，打印汇总表与类型 id 并集。
 func scanPath(root string, graphField int) error {
 	paths := []string{}
 	info, err := os.Stat(root)
@@ -45,7 +43,7 @@ func scanPath(root string, graphField int) error {
 	if info.IsDir() {
 		walkErr := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 			if err != nil {
-				return nil // skip unreadable entries rather than aborting the whole scan
+				return nil // 跳过读不了的条目，而不是让整次扫描失败
 			}
 			if !d.IsDir() && isScanCandidate(p) {
 				paths = append(paths, p)
@@ -63,8 +61,8 @@ func scanPath(root string, graphField int) error {
 		return fmt.Errorf("no .gil / .gia files under %s", root)
 	}
 
-	nodeTypeUse := map[uint64]int{} // node type id -> occurrences across all files
-	varTypeUse := map[uint64]int{}  // variable type id -> declarations across all files
+	nodeTypeUse := map[uint64]int{} // 节点类型 id -> 全部文件中的出现次数
+	varTypeUse := map[uint64]int{}  // 变量类型 id -> 全部文件中的声明次数
 	rows := []scanRow{}
 
 	fmt.Printf("scanning %d file(s) under %s\n\n", len(paths), root)
@@ -126,8 +124,8 @@ func scanPath(root string, graphField int) error {
 	return nil
 }
 
-// nodeTypeNames is populated from node-types.txt at startup by loadNodeTypes, but scanPath can
-// also be called before that; keep a package-level copy for the summary.
+// nodeTypeNames 由 loadNodeTypes 在启动时从 node-types.txt 填入；
+// 但 scanPath 也可能在那之前被调用，所以这里保留一份包级副本供汇总使用。
 var nodeTypeNames = map[uint64]string{}
 
 func sortedKeys(m map[uint64]int) []uint64 {

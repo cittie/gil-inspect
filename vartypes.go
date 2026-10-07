@@ -1,23 +1,22 @@
-// Custom-variable declarations and their declared types.
+// 自定义变量的声明，以及它们声明的类型。
 //
-// Why this exists (2026-10-05): a building's custom variable meant to hold an 元件ID (element
-// id) was declared as 整数 instead. Nothing errored -- the spawner simply did nothing -- and it
-// cost a debugging session. Type mismatches in this platform are silent, so they deserve a lint.
+// 为什么有这个（2026-10-05）：建筑上一个本该存【元件ID】的自定义变量，第一次被声明成了【整数】。
+// **没有任何报错** —— 出兵机制就是"什么都不做" —— 为此多花了一轮排查。这个平台的类型不匹配
+// 是**静默**的，所以值得专门做一条 lint。
 //
-// Measured layout of one declaration (empirically, on a real export):
+// 一条声明的实测布局（在真实导出上量出来的）：
 //
-//	0a <len>          field 1: the variable entry
-//	  12 <len> <name> field 2: the name
-//	  18 <varint>     field 3: THE TYPE ID
-//	  22 <len> ...    field 4: a descriptor repeating the type
-//	  a2 01 <len> ... field 20: default value (encoding depends on the type; float32 for 浮点)
+//	0a <len>          字段 1：变量条目
+//	  12 <len> <名字>  字段 2：名字
+//	  18 <varint>     字段 3：**类型 id**
+//	  22 <len> ...    字段 4：重复一遍类型描述符
+//	  a2 01 <len> ... 字段 20：默认值（编码方式随类型而变；浮点用 float32）
 //
-// Graph names share the same 0x12 <len> <name> prefix but are followed by 0x1a (the node list)
-// instead of 0x18, which is what keeps declarations and graph names apart.
+// 图名共享同样的 `0x12 <len> <名字>` 前缀，但后面跟的是 0x1a（节点列表）而不是 0x18 ——
+// 这就是把"变量声明"和"图名"区分开的依据。
 //
-// Type ids are internal, so only ids confirmed against a known variable are named here; the rest
-// are printed as numbers and can be filled in via var-types.txt -- the same pattern as
-// node-types.txt, so no third-party table is redistributed with this repository.
+// 类型 id 是内部的，所以这里只命名**用已知变量确认过**的 id；其余按数字打印，可通过
+// var-types.txt 补充 —— 与 node-types.txt 同一套做法，因此本仓库不转发任何第三方映射表。
 package main
 
 import (
@@ -30,29 +29,29 @@ import (
 	"strings"
 )
 
-// VarDecl is one declared custom variable.
+// VarDecl 是一个已声明的自定义变量。
 type VarDecl struct {
 	Name    string
 	TypeID  uint64
-	Sites   int    // how many declaration sites carry this exact (name, type)
-	Default string // rendered default value when one was found
+	Sites   int    // 有多少处声明带着这个完全相同的（名字, 类型）
+	Default string // 找到默认值时，渲染成字符串的默认值
 }
 
-// Type ids verified against variables whose type we know from building the level.
-// Deliberately tiny: an unverified guess here would produce confident nonsense.
+// 这些类型 id 是用"建房时已知类型的变量"验证过的。
+// 刻意保持很小：这里放一条未经验证的猜测，就会产出"自信的胡说"。
 var knownVarTypes = map[uint64]string{
 	4:  "布尔",
 	10: "浮点",
 	21: "元件ID",
 }
 
-// names that suggest a *reference* (element id / template / config) rather than a number
+// 名字暗示它是**引用**（元件ID / 模板 / 配置），而不是一个数值
 var referenceNameHints = []string{"_id", "id_", "_unit", "unit_", "_元件", "_模板", "_配置", "元件", "模板"}
 
-// numeric types: storing an element id in one of these is the bug this lint is about
+// 数值类型：把元件ID 存进这几种类型，正是本条 lint 要抓的坑
 var numericVarTypes = map[uint64]bool{2: true, 3: true, 10: true, 11: true}
 
-// loadVarTypes reads extra "id<TAB>name" lines, mirroring node-types.txt.
+// loadVarTypes 读取额外的 "id<TAB>名字" 行，与 node-types.txt 同一套格式。
 func loadVarTypes(path string) map[uint64]string {
 	out := map[uint64]string{}
 	for id, name := range knownVarTypes {
@@ -89,7 +88,7 @@ func typeLabel(id uint64, table map[uint64]string) string {
 	return fmt.Sprintf("type %d（未映射）", id)
 }
 
-// scanVariableDeclarations finds every custom-variable declaration in the container.
+// scanVariableDeclarations 找出容器里所有的自定义变量声明。
 func scanVariableDeclarations(raw []byte) []VarDecl {
 	type key struct {
 		name string
@@ -156,9 +155,9 @@ func readVarintAt(b []byte, pos int) (uint64, int, bool) {
 	return 0, 0, false
 }
 
-// defaultAfter finds the field-20 default value that follows a declaration and renders it.
-// The default is nested inside the field-4 descriptor, so instead of assuming a byte layout we
-// search a small window for the "0a 04 <float32>" shape and read that.
+// defaultAfter 找出声明后面那个字段 20 的默认值并渲染出来。
+// 默认值是**嵌在字段 4 的描述符里面**的，所以这里不假设字节布局，
+// 而是在一个小窗口里找 "0a 04 <float32>" 这个形状，然后读出来。
 func defaultAfter(b []byte) (string, bool) {
 	if len(b) > 32 {
 		b = b[:32]
@@ -169,7 +168,7 @@ func defaultAfter(b []byte) (string, bool) {
 		}
 		bits := uint32(b[i+2]) | uint32(b[i+3])<<8 | uint32(b[i+4])<<16 | uint32(b[i+5])<<24
 		f := math.Float32frombits(bits)
-		// reject shapes that are obviously not a plausible default value
+		// 排除那些明显不像合理默认值的形状
 		if f != f || f > 1e9 || f < -1e9 {
 			continue
 		}
@@ -188,11 +187,11 @@ func looksLikeReferenceName(name string) bool {
 	return false
 }
 
-// lintVariables appends type-related findings.
+// lintVariables 追加与类型有关的检查结果。
 func lintVariables(raw []byte, types map[uint64]string, add func(level, code, what string)) []VarDecl {
 	decls := scanVariableDeclarations(raw)
 
-	// same name declared with different types in different places
+	// 同名变量在不同位置被声明成了不同类型
 	byName := map[string]map[uint64]int{}
 	for _, d := range decls {
 		if byName[d.Name] == nil {
@@ -214,13 +213,13 @@ func lintVariables(raw []byte, types map[uint64]string, add func(level, code, wh
 	}
 
 	for _, d := range decls {
-		// a name that reads like a reference must not be declared as a number
+		// 读起来像"引用"的名字，不应该被声明成数值类型
 		if looksLikeReferenceName(d.Name) && numericVarTypes[d.TypeID] {
 			add("warn", "reference-typed-as-number",
 				fmt.Sprintf("变量 `%s` 声明为 %s，但名字暗示它应存**引用**（元件ID / 模板 等）—— "+
 					"这正是「类型写成整数导致机制静默不生效」的那类问题，请改用 元件ID 类型", d.Name, typeLabel(d.TypeID, types)))
 		}
-		// a float default under a non-float type is a contradiction
+		// 非浮点类型却带着浮点默认值 —— 自相矛盾
 		if d.Default != "" && d.TypeID != 10 && d.TypeID != 11 {
 			add("warn", "default-value-type-mismatch",
 				fmt.Sprintf("变量 `%s` 声明为 %s，却带着一个浮点默认值 %s —— 默认值与声明类型不一致", d.Name, typeLabel(d.TypeID, types), d.Default))
@@ -233,7 +232,7 @@ func lintVariables(raw []byte, types map[uint64]string, add func(level, code, wh
 	return decls
 }
 
-// renderVarTable renders the declared-variable inventory for the lint report.
+// renderVarTable 为检查报告渲染"已声明的变量"清单。
 func renderVarTable(decls []VarDecl, types map[uint64]string) string {
 	if len(decls) == 0 {
 		return ""
