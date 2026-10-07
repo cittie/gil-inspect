@@ -43,7 +43,7 @@ gil-inspect -path <存档.gil> [参数]
 
   -graphs          输出 <名字>.graphs.md —— 纯文本中间文件
   -lint            输出 <名字>.lint.md —— 常规检查（见下）
-  -scan 目录       批量扫描一个目录下的导出：汇总表 + 类型 id 并集（标定用）
+  -scan 目录       批量扫描目录下的关卡存档（.gil）与资产文件（.gia）：汇总表 + 类型 id 并集
   -nodetypes FILE  节点类型映射表（默认 node-types.txt）
   -graphfield N    存放节点图的容器字段号（默认 10）
   -graphdump       输出 <名字>.graph-fN.md —— 完整缩进树（解码用辅助）

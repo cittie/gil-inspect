@@ -296,3 +296,48 @@ Conclusions:
 - if real verification is ever wanted, the next place to look is how an entity's *node-graph
   config* is stored — the graph-section wrapper carries an extra nesting level, and the entity
   side may reference graphs by a hash instead of by this local id.
+
+## 10. Asset files (`.gia`) — same container, different payload (2026-10-07)
+
+A `.gia` (an asset from the asset centre) uses the **same container layout** as a `.gil`: a 20-byte
+header of five big-endian words, then protobuf at offset 20. Observed header difference:
+
+| word | `.gil` (level save) | `.gia` (asset) | note |
+| --- | --- | --- | --- |
+| 0 | size − 4 | size − 4 | same |
+| 2 | **806** | **806** | constant format marker, *not* a length |
+| 3 | **2** | **3** | **container kind** — level save vs asset |
+| 4 | size − 24 | size − 24 | same |
+
+The payload is a **list of asset records**, one top-level `f1` each, not a level. A record:
+
+```
+f1/f2   small id messages
+f3      text     display name, e.g. "[随机]范围内取随机点（矩形）"
+f5      varint
+f14     message  the internal graph
+    f102 { f1 <pin name>, f2 <index>, f3 {…}, f4 {…} }   pin definitions
+    its node records use f5 = 0x40000001 for the compound's own boundary
+    nodes, i.e. the internal shape differs from a level's
+```
+
+Measured on `常用复合节点大全v1.7` (a community pack): **176 records, 87 with a display name**
+(`[执行]` 15 · `[查询]` 12 · `[变量]` 11 · `[运算]` 11 · `[矩阵]` 10 · `[随机]` 7 · `[时间]` 5 ·
+`[遍历]` 4 · `[事件]` 4 · `[技能]` 1), **197 pin definitions**, and **119 distinct node type ids
+over 842 occurrences**.
+
+⭐ **Assets and levels share one node-type id space**: six ids already verified from a level export
+appear in that pack (2 双分支 ×42, 14 是否相等 ×14, 180 数据类型转换 ×14, 3 多分支, 82 终止定时器,
+77 结算关卡). A folder of assets is therefore a large calibration corpus.
+
+⚠️ **Per-record attribution is unsolved**: the compound's internal node records do not use the
+level's shape, so "which primitive node types does this compound use" cannot be answered yet —
+which is exactly what would turn asset names into `id → name` mappings automatically.
+
+**What does work today**: `tools/probe_gia_nodes.py --catalog OUT.md` (in the workspace) writes one
+section per named record — name, pin names, and the text strings inside the record. Those strings
+mix pin labels with the **author's own notes**, which is where the learning value sits, e.g.
+`[变量]更新时间` → "需要在关卡实体挂载全局计时器Update" (a usage prerequisite),
+`[时间]等待时间/延时` → "确保定时器名称不重复".
+
+⚠️ Community assets are **another creator's 奇域内容**: study locally, never commit or redistribute.

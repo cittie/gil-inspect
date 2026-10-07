@@ -27,6 +27,14 @@ type scanRow struct {
 	ParseWarn string
 }
 
+// scanExtensions: level saves (.gil) and asset files (.gia) share the same container layout --
+// a 20-byte header followed by protobuf -- so one scanner covers both.
+var scanExtensions = map[string]bool{".gil": true, ".gia": true}
+
+func isScanCandidate(name string) bool {
+	return scanExtensions[strings.ToLower(filepath.Ext(name))]
+}
+
 // scanPath walks a file or directory and prints a summary plus the type-id unions.
 func scanPath(root string, graphField int) error {
 	paths := []string{}
@@ -39,7 +47,7 @@ func scanPath(root string, graphField int) error {
 			if err != nil {
 				return nil // skip unreadable entries rather than aborting the whole scan
 			}
-			if !d.IsDir() && strings.EqualFold(filepath.Ext(p), ".gil") {
+			if !d.IsDir() && isScanCandidate(p) {
 				paths = append(paths, p)
 			}
 			return nil
@@ -52,7 +60,7 @@ func scanPath(root string, graphField int) error {
 		paths = append(paths, root)
 	}
 	if len(paths) == 0 {
-		return fmt.Errorf("no .gil files under %s", root)
+		return fmt.Errorf("no .gil / .gia files under %s", root)
 	}
 
 	nodeTypeUse := map[uint64]int{} // node type id -> occurrences across all files
