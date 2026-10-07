@@ -76,12 +76,14 @@ func scanPath(root string, graphField int) error {
 			continue
 		}
 		row := scanRow{Name: filepath.Base(p), Size: len(raw)}
-		if payload, ok := fieldPayload(raw, graphField); ok {
-			for _, g := range extractGraphs(payload) {
+		if gs, ok := graphsFrom(raw, graphField); ok {
+			for _, g := range gs {
 				row.Graphs++
 				row.Nodes += len(g.Nodes)
 				for _, n := range g.Nodes {
-					nodeTypeUse[n.TypeID]++
+					if n.TypeID < refTypeBase && n.TypeID != assetBoundaryType {
+						nodeTypeUse[n.TypeID]++
+					}
 				}
 			}
 		} else {

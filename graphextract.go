@@ -331,10 +331,7 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 		fmt.Fprintf(&b, "\n## %s\n\n", g.Name)
 		b.WriteString("nodes:\n")
 		for _, n := range g.Nodes {
-			name := types[n.TypeID]
-			if name == "" {
-				name = fmt.Sprintf("?%d", n.TypeID)
-			}
+			name := typeLabelFor(n.TypeID, types)
 			freq[n.TypeID]++
 			line := fmt.Sprintf("  %d\t%s", n.Index, name)
 			if n.Title != "" {
@@ -353,8 +350,8 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 		}
 		b.WriteString("links:\n")
 		b.WriteString("  # EXPERIMENTAL - not verified against a known graph, do not trust yet\n")
-		b.WriteString("  # the pin blocks decoded so far do not contain the real node pairs; see\n")
-		b.WriteString("  # docs/node-graph-extraction.md 6b/6c for the ground truth this must reproduce\n")
+		b.WriteString("  # 关卡：引脚块里解出的候选引用，实测 14 条已知边只对上 2 条（见 docs/node-graph-extraction.md 6b/6c）\n")
+		b.WriteString("  # 资产：分组 f4 → f5 子树第一个 varint 指向的节点索引，**尚未用截图核对**\n")
 		if len(g.Links) == 0 {
 			b.WriteString("  (none)\n")
 		} else {
@@ -364,11 +361,11 @@ func renderGraphs(srcName string, graphs []gGraph, types map[uint64]string) stri
 		}
 	}
 	unknown := []uint64{}
-	for id, c := range freq {
-		if types[id] == "" {
+	for id := range freq {
+		// 引用值（≥ refTypeBase）与复合节点边界不是"未映射的节点类型"，不进工作清单
+		if types[id] == "" && id < refTypeBase && id != assetBoundaryType {
 			unknown = append(unknown, id)
 		}
-		_ = c
 	}
 	sort.Slice(unknown, func(i, j int) bool { return freq[unknown[i]] > freq[unknown[j]] })
 	b.WriteString("## types needing a mapping\n\n")

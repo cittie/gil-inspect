@@ -27,8 +27,8 @@ gil-inspect -path export/MyLevel.gil -graphs
 | diff against the previous snapshot (field sizes, added/removed names) | ✅ works |
 | keyword checklist (which of your identifiers are present, and how often) | ✅ works |
 | CJK strings / ASCII identifiers | ✅ works |
-| **node graphs**: graph names, node list, **node type ids**, positions, custom titles, referenced variable names | ✅ works |
-| node type **names** | ✅ **30 ids** mapped: 9 verified against a real graph and built in, 21 more in the shipped `node-types.txt`; every name cross-checked against the official node catalogue. Our own level now reports **0 unmapped types** |
+| **node graphs**: graph names, node list, **node type ids**, positions, custom titles, referenced variable names | ✅ works for **both** container kinds — level saves (`.gil`, field `f10`) **and asset files** (`.gia`, each compound node's own graph) |
+| node type **names** | ✅ **36 ids** mapped: 9 verified against a real graph and built in, 27 more in the shipped `node-types.txt`; every name cross-checked against the official node catalogue. Our own level reports **0 unmapped types** |
 | graph **wiring** (which pin feeds which) | ⚠️ **experimental, not trustworthy** — see below |
 
 ### Wiring is explicitly not claimed

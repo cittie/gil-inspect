@@ -135,9 +135,12 @@ func main() {
 	if *graphs {
 		base := strings.TrimSuffix(*path, filepath.Ext(*path))
 		outPath := fmt.Sprintf("%s.graphs.md", base)
-		if payload, ok := fieldPayload(raw, *graphField); ok {
-			gs := extractGraphs(payload)
+		if gs, ok := graphsFrom(raw, *graphField); ok {
 			table := loadNodeTypes(*nodeTypes)
+			kind := "关卡图"
+			if isAssetContainer(raw) {
+				kind = "资产复合节点图"
+			}
 			report := renderGraphs(filepath.Base(*path), gs, table)
 			if err := os.WriteFile(outPath, []byte(report), 0o644); err != nil {
 				fmt.Fprintln(os.Stderr, "cannot write graphs file:", err)
@@ -146,12 +149,13 @@ func main() {
 				for _, g := range gs {
 					total += len(g.Nodes)
 					for _, n := range g.Nodes {
-						if table[n.TypeID] == "" {
+						if table[n.TypeID] == "" && n.TypeID < refTypeBase && n.TypeID != assetBoundaryType {
 							unknown[n.TypeID] = true
 						}
 					}
 				}
-				fmt.Printf("graphs    : %s (%d graphs, %d nodes, %d unmapped types)\n", outPath, len(gs), total, len(unknown))
+				fmt.Printf("graphs    : %s (%s：%d 张图, %d 个节点, %d 个未映射类型)\n",
+					outPath, kind, len(gs), total, len(unknown))
 			}
 		} else {
 			fmt.Fprintf(os.Stderr, "field %d not found (or is not length-delimited)\n", *graphField)
@@ -175,12 +179,17 @@ func main() {
 		outPath := fmt.Sprintf("%s.lint.md", base)
 		findings := lintExport(raw, *graphField)
 		names := []string{}
-		if payload, ok := fieldPayload(raw, *graphField); ok {
-			for _, g := range extractGraphs(payload) {
+		if gs, ok := graphsFrom(raw, *graphField); ok {
+			for _, g := range gs {
 				if g.Name != "" {
 					names = append(names, g.Name)
 				}
 			}
+		}
+		if isAssetContainer(raw) {
+			findings = append(findings, Finding{Level: "info", Code: "asset-container",
+				What: "这是**资产文件**（.gia）而不是关卡存档：下面的检查项按**关卡**语义设计（悬空引用、跨位置一致性），" +
+					"对资产只能作参考；资产要看复合节点图请用 -graphs"})
 		}
 		varTypes := loadVarTypes("var-types.txt")
 		decls := scanVariableDeclarations(raw)
